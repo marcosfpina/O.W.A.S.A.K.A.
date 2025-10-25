@@ -197,7 +197,7 @@
 
           buildInputs = with pkgs; [
             # === Core Development ===
-            go_1_22          # Go 1.22+ (or latest available)
+            go          # Go 1.22+ (or latest available)
             gotools          # godoc, goimports, etc.
             gopls            # Go language server
             delve            # Go debugger
