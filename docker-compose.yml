@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # Wazuh Indexer (OpenSearch)
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.8.0
+    container_name: wazuh-indexer
+    hostname: wazuh-indexer
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "bootstrap.memory_lock=true"
+      - "discovery.type=single-node"
+      - "network.host=0.0.0.0"
+      - "plugins.security.ssl.http.enabled=false"
+      - "plugins.security.disabled=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - wazuh-indexer-data:/var/lib/wazuh-indexer
+    networks:
+      - wazuh-network
+
+  # Wazuh Manager
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.8.0
+    container_name: wazuh-manager
+    hostname: wazuh-manager
+    restart: unless-stopped
+    ports:
+      - "1514:1514"     # Agent connection (TCP)
+      - "1515:1515"     # Agent enrollment
+      - "514:514/udp"   # Syslog
+      - "55000:55000"   # API
+    environment:
+      - INDEXER_URL=http://wazuh-indexer:9200
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=SecretPassword
+      - FILEBEAT_SSL_VERIFICATION_MODE=none
+      - SSL_CERTIFICATE_AUTHORITIES=""
+      - SSL_CERTIFICATE=""
+      - SSL_KEY=""
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=MyS3cr37P450r.*-
+    volumes:
+      - wazuh-manager-config:/var/ossec/etc
+      - wazuh-manager-logs:/var/ossec/logs
+      - wazuh-manager-queue:/var/ossec/queue
+      - wazuh-manager-var-multigroups:/var/ossec/var/multigroups
+      - wazuh-manager-integrations:/var/ossec/integrations
+      - wazuh-manager-active-response:/var/ossec/active-response/bin
+      - wazuh-manager-agentless:/var/ossec/agentless
+      - wazuh-manager-wodles:/var/ossec/wodles
+      - ./custom-rules:/var/ossec/etc/rules/custom:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Docker monitoring
+    networks:
+      - wazuh-network
+    depends_on:
+      - wazuh-indexer
+
+  # Wazuh Dashboard
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.8.0
+    container_name: wazuh-dashboard
+    hostname: wazuh-dashboard
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=SecretPassword
+      - WAZUH_API_URL=https://wazuh-manager
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=MyS3cr37P450r.*-
+      - OPENSEARCH_HOSTS=http://wazuh-indexer:9200
+    volumes:
+      - wazuh-dashboard-config:/usr/share/wazuh-dashboard/config
+      - wazuh-dashboard-custom:/usr/share/wazuh-dashboard/plugins/wazuh/public/assets/custom
+    networks:
+      - wazuh-network
+    depends_on:
+      - wazuh-indexer
+      - wazuh-manager
+
+networks:
+  wazuh-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
+
+volumes:
+  wazuh-indexer-data:
+  wazuh-manager-config:
+  wazuh-manager-logs:
+  wazuh-manager-queue:
+  wazuh-manager-var-multigroups:
+  wazuh-manager-integrations:
+  wazuh-manager-active-response:
+  wazuh-manager-agentless:
+  wazuh-manager-wodles:
+  wazuh-dashboard-config:
+  wazuh-dashboard-custom:
