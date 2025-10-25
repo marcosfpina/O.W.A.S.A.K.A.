@@ -1,0 +1,290 @@
+# O.W.A.S.A.K.A. SIEM - Default Configuration
+# Air-gapped Security Information and Event Management
+
+# Server configuration
+server:
+  # HTTP server for WebSocket and API
+  host: "127.0.0.1"
+  port: 8080
+
+  # WebSocket configuration
+  websocket:
+    enabled: true
+    path: "/ws"
+    max_connections: 1000
+
+  # TLS configuration (recommended for production)
+  tls:
+    enabled: false
+    cert_file: "/etc/oswaka/certs/server.crt"
+    key_file: "/etc/oswaka/certs/server.key"
+
+# Logging configuration
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "json" # json, text
+  output: "stdout" # stdout, file, both
+  file_path: "/var/log/oswaka/oswaka.log"
+  max_size_mb: 100
+  max_backups: 5
+  max_age_days: 30
+  compress: true
+
+# Network intelligence configuration
+network:
+  # DNS resolver
+  dns:
+    enabled: true
+    listen_address: "127.0.0.1:53"
+    upstream_servers:
+      - "1.1.1.1:53"
+      - "8.8.8.8:53"
+    doh_enabled: true
+    doh_url: "https://cloudflare-dns.com/dns-query"
+    cache_size: 10000
+    cache_ttl_seconds: 300
+    log_queries: true
+    threat_detection: true
+
+  # Transparent proxy
+  proxy:
+    enabled: false  # Requires elevated privileges
+    listen_address: "127.0.0.1:8888"
+    mitm_enabled: false  # Man-in-the-middle for HTTPS inspection
+    cert_storage: "/var/lib/oswaka/certs"
+    dpi_enabled: true
+    protocols:
+      - http
+      - https
+      - websocket
+
+  # Network discovery
+  discovery:
+    enabled: true
+    scan_interval_minutes: 60
+    methods:
+      - arp
+      - icmp
+      - mdns
+    passive_monitoring: true
+    concurrent_scans: 10
+    rate_limit_per_second: 100
+
+  # Topology mapping
+  topology:
+    enabled: true
+    update_interval_seconds: 30
+    export_format: "json"
+    graph_algorithm: "force_directed"
+
+# Asset discovery configuration
+discovery:
+  # Physical device enumeration
+  physical:
+    enabled: true
+    scan_interval_minutes: 120
+    devices:
+      - usb
+      - pci
+      - thunderbolt
+
+  # Virtual machine scanning
+  virtual:
+    enabled: true
+    scan_interval_minutes: 60
+    hypervisors:
+      libvirt:
+        enabled: false
+        uri: "qemu:///system"
+      vmware:
+        enabled: false
+        host: ""
+        username: ""
+        password: ""
+
+  # Container scanning
+  containers:
+    enabled: true
+    scan_interval_minutes: 30
+    runtimes:
+      - docker
+      - containerd
+    docker_socket: "/var/run/docker.sock"
+
+  # Attack surface mapping
+  attack_surface:
+    enabled: true
+    scan_interval_minutes: 180
+    port_range:
+      start: 1
+      end: 65535
+    protocols:
+      - tcp
+      - udp
+    detect_dormant: true
+    detect_ghost: true
+    service_fingerprinting: true
+    banner_grabbing: true
+    tls_analysis: true
+
+  # Reconciliation
+  reconciliation:
+    enabled: true
+    check_interval_minutes: 15
+    alert_on_change: true
+    track_history: true
+    history_retention_days: 90
+
+# Browser integration (Firefox)
+browser:
+  enabled: false  # Disable by default
+  firefox:
+    binary_path: "/usr/bin/firefox-esr"
+    profile_dir: "/var/lib/oswaka/firefox_profiles"
+    hardening_enabled: true
+    extension_lockdown: true
+    telemetry_disabled: true
+  automation:
+    enabled: false
+    webdriver_port: 4444
+    screenshot_on_alert: true
+    har_logging: true
+
+# Storage configuration
+storage:
+  # NAS integration
+  nas:
+    enabled: false  # Configure when NAS available
+    type: "nfs"  # nfs, smb, iscsi
+    host: ""
+    share: ""
+    mount_point: "/mnt/oswaka_nas"
+    username: ""
+    password: ""
+    timeout_seconds: 30
+    retry_attempts: 3
+    health_check_interval_seconds: 60
+
+  # Encryption
+  encryption:
+    enabled: true
+    algorithm: "aes-256-gcm"
+    key_derivation: "argon2id"
+    key_file: "/etc/oswaka/keys/master.key"
+    rotate_keys_days: 90
+
+  # Integrity verification
+  integrity:
+    enabled: true
+    merkle_tree: true
+    audit_log: "/var/lib/oswaka/audit.log"
+    snapshot_interval_hours: 24
+    snapshot_retention_days: 30
+
+  # Local storage (fallback if NAS unavailable)
+  local:
+    data_dir: "/var/lib/oswaka/data"
+    max_size_gb: 100
+    cleanup_policy: "oldest_first"
+
+# Analytics and correlation
+analytics:
+  # Stream processing
+  stream:
+    enabled: true
+    buffer_size: 100000
+    flush_interval_seconds: 5
+    workers: 4
+
+  # Correlation engine
+  correlation:
+    enabled: true
+    rules_dir: "/etc/oswaka/rules"
+    sigma_rules_enabled: true
+    custom_rules_enabled: true
+    max_correlation_window_minutes: 60
+
+  # ML anomaly detection
+  ml:
+    enabled: true
+    model_dir: "/var/lib/oswaka/models"
+    training_interval_hours: 24
+    anomaly_threshold: 0.7  # 0.0 - 1.0
+    methods:
+      - statistical
+      - isolation_forest
+    baseline_learning_days: 7
+
+# Alerting
+alerts:
+  enabled: true
+
+  # Alert thresholds
+  thresholds:
+    critical: 9.0   # Risk score 9.0-10.0
+    high: 7.0       # Risk score 7.0-8.9
+    medium: 5.0     # Risk score 5.0-6.9
+    low: 3.0        # Risk score 3.0-4.9
+    info: 0.0       # Risk score 0.0-2.9
+
+  # Alert destinations (future)
+  destinations:
+    webhook:
+      enabled: false
+      url: ""
+    email:
+      enabled: false
+      smtp_host: ""
+      smtp_port: 587
+      from: ""
+      to: []
+
+  # Deduplication
+  deduplication:
+    enabled: true
+    window_minutes: 60
+    similarity_threshold: 0.9
+
+# Performance tuning
+performance:
+  max_memory_mb: 4096
+  max_cpu_percent: 80
+  max_concurrent_scans: 50
+  event_queue_size: 1000000
+
+# Metrics and monitoring
+metrics:
+  enabled: true
+  prometheus:
+    enabled: true
+    listen_address: "127.0.0.1:9090"
+    path: "/metrics"
+
+# Development/debugging
+debug:
+  enabled: false
+  pprof:
+    enabled: false
+    listen_address: "127.0.0.1:6060"
+  trace:
+    enabled: false
+  profiling:
+    enabled: false
+
+# Security
+security:
+  # API authentication (future)
+  api_auth:
+    enabled: false
+    method: "mtls"  # mtls, jwt, basic
+
+  # Rate limiting
+  rate_limiting:
+    enabled: true
+    requests_per_second: 100
+    burst: 200
+
+  # RBAC (future)
+  rbac:
+    enabled: false
+    roles_file: "/etc/oswaka/roles.yaml"

@@ -1,197 +1,294 @@
-# Wazuh SIEM - Network Security Monitoring
+# O.W.A.S.A.K.A. SIEM
 
-## 🔐 Arquitetura
+> **Open Watchful Air-gapped Security Analysis Kit & Architecture**
+
+A zero-trust, air-gapped SIEM platform built for surgical precision monitoring with enterprise-grade security - running locally on dedicated hardware.
+
+---
+
+## Philosophy
+
+> "A SIEM should be like a butler: invisible until needed, impeccably informed when called upon, and never presumptuous about what matters."
+
+**Core Principles:**
+- **Isolation-First Design**: Air-gapped by architecture, not configuration
+- **Defense in Depth**: Layered security at every level
+- **Elegance Over Complexity**: Clean UX, minimal footprint, maximum insight
+- **Signal over Noise**: Optimize for what matters
+
+---
+
+## Architecture Overview
 
 ```
-Containers → Wazuh Agent → Wazuh Manager → Wazuh Indexer → Wazuh Dashboard
+┌─────────────────────────────────────────────────────────────────┐
+│                    O.W.A.S.A.K.A. SIEM                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌──────────────────┐    ┌──────────────────┐                 │
+│  │  Modern Web UI   │───▶│  WebSocket API   │                 │
+│  │  (Svelte + TS)   │    │   (Real-time)    │                 │
+│  └──────────────────┘    └──────────────────┘                 │
+│                                   │                             │
+│  ┌────────────────────────────────▼─────────────────────────┐ │
+│  │           Golang Core Engine                             │ │
+│  ├──────────────────────────────────────────────────────────┤ │
+│  │ Network Intelligence │ Discovery Engine │ Analytics      │ │
+│  │  • DNS Resolver      │  • Physical      │  • Correlation │ │
+│  │  • Proxy/DPI         │  • Virtual       │  • ML Anomaly  │ │
+│  │  • Topology Map      │  • Attack Surface│  • Alerting    │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                   │                             │
+│  ┌────────────────────────────────▼─────────────────────────┐ │
+│  │         Secure Storage Layer (NAS Integration)           │ │
+│  │  • Encrypted at rest (AES-256-GCM)                       │ │
+│  │  • Immutable audit logs                                  │ │
+│  │  • Integrity verification (Merkle trees)                 │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+        │                          │                    │
+        ▼                          ▼                    ▼
+   [Physical]              [Virtual/Containers]    [Network]
+   Devices                 Docker/VMs              Services
 ```
 
-## 🚀 Quick Start
+---
 
-### 1. Iniciar o Wazuh Stack
+## Features
+
+### Network Intelligence
+- **Custom DNS Resolver** with query logging and anomaly detection
+- **Transparent Proxy** with mTLS inspection and protocol detection
+- **Network Topology Mapper** with active/passive discovery
+- **Deep Packet Inspection** for traffic analysis
+
+### Asset Discovery
+- **Multi-layer Discovery**: Physical, virtual, containerized assets
+- **Attack Surface Mapping**: ALL ports (0-65535), including dormant services
+- **Continuous Reconciliation**: Detect changes and drift in real-time
+- **Ghost Port Detection**: Find development/debug endpoints
+
+### Security
+- **Air-gapped Architecture**: No external network exposure by design
+- **Self-hosted Firefox** with enforced security policies
+- **Encrypted Storage**: AES-256-GCM with Argon2id key derivation
+- **Immutable Audit Logs**: Tamper-proof event recording
+
+### User Experience
+- **Modern, Clean Interface**: Dark mode by default
+- **Real-time Updates**: WebSocket-powered live data
+- **Customizable Dashboards**: Widget-based layout
+- **Low Resource Usage**: <500MB memory footprint (idle)
+
+---
+
+## Project Structure
+
+```
+O.W.A.S.A.K.A./
+├── cmd/
+│   └── oswaka/              # Application entry point
+├── internal/                # Private application logic
+│   ├── network/            # Network intelligence layer
+│   │   ├── dns/           # DNS resolver & logging
+│   │   ├── proxy/         # Transparent proxy & DPI
+│   │   ├── discovery/     # Network scanning
+│   │   └── topology/      # Network graph
+│   ├── discovery/         # Asset discovery engine
+│   │   ├── physical/      # Physical device enumeration
+│   │   ├── virtual/       # VM/container scanning
+│   │   ├── attack_surface/# Attack surface mapper
+│   │   └── reconciler/    # Change detection
+│   ├── browser/           # Firefox integration
+│   │   ├── firefox/       # Browser launcher
+│   │   ├── policies/      # Security policy enforcer
+│   │   └── automation/    # WebDriver integration
+│   ├── storage/           # Data persistence
+│   │   ├── nas/          # NAS connector
+│   │   ├── crypto/       # Encryption/decryption
+│   │   └── integrity/    # Verification & checksums
+│   └── analytics/         # Intelligence engine
+│       ├── stream/       # Event processing
+│       ├── correlation/  # Rule engine
+│       └── ml/          # Anomaly detection
+├── pkg/                   # Public libraries
+│   ├── config/           # Configuration management
+│   ├── logging/          # Structured logging
+│   └── metrics/          # Prometheus metrics
+├── web/                   # Frontend application
+│   ├── src/
+│   │   ├── components/   # Svelte components
+│   │   ├── stores/       # State management
+│   │   └── lib/         # Utilities
+│   └── public/           # Static assets
+├── configs/               # Configuration files
+│   ├── examples/         # Example configurations
+│   └── policies/         # Security policies
+└── docs/                  # Documentation
+    ├── architecture/     # Design docs
+    ├── api/             # API documentation
+    └── deployment/      # Deployment guides
+```
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- **Go 1.22+** (tested on 1.24.7)
+- **Node.js 18+** (for web UI)
+- **Dedicated hardware** (no shared environments)
+- **NAS cluster** (for persistent storage)
+- **Firefox ESR** (for browser integration)
+
+### Installation
 
 ```bash
-cd "/home/kernelcore/Documents/nx/docker/sql & nvidia/wazuh-siem"
-docker compose up -d
+# Clone the repository
+git clone https://github.com/marcosfpina/O.W.A.S.A.K.A.git
+cd O.W.A.S.A.K.A
+
+# Build the project
+make build
+
+# Run tests
+make test
+
+# Start the SIEM
+./bin/oswaka --config configs/examples/default.yaml
 ```
 
-### 2. Verificar Status
+### Development
 
 ```bash
-docker compose ps
+# Install dependencies
+make deps
+
+# Run in development mode
+make dev
+
+# Run linters
+make lint
+
+# Generate documentation
+make docs
 ```
 
-### 3. Acessar Dashboard
+---
 
-- URL: http://localhost:5601
-- Username: `admin`
-- Password: `SecretPassword`
+## Configuration
 
-## 📊 Componentes
+Example configuration (`configs/examples/default.yaml`):
 
-### Wazuh Manager (Port 1514, 1515, 55000)
-- Processa logs e eventos
-- Executa rules engine
-- Detecta vulnerabilidades
-- File Integrity Monitoring (FIM)
-
-### Wazuh Indexer (Port 9200)
-- OpenSearch para armazenamento
-- Indexação de logs
-- Query engine
-
-### Wazuh Dashboard (Port 5601)
-- Interface Web
-- Visualizações e dashboards
-- Alertas e relatórios
-- Compliance reports
-
-## 🔧 Configuração de Agentes
-
-### Instalar Agente em Container Existente
-
-```bash
-# Entre no container
-docker exec -it <container_name> bash
-
-# Instale o agente (Debian/Ubuntu)
-curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add -
-echo "deb https://packages.wazuh.com/4.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list
-apt-get update
-apt-get install wazuh-agent
-
-# Configure o manager
-echo "WAZUH_MANAGER='172.25.0.2'" > /var/ossec/etc/ossec.conf.d/manager.conf
-
-# Inicie o agente
-systemctl enable wazuh-agent
-systemctl start wazuh-agent
+```yaml
+# Coming soon - PHASE 0 in progress
 ```
 
-### Monitorar Docker Socket (Já configurado)
+---
 
-O Wazuh Manager já está configurado para monitorar:
-- Docker events via socket
-- Container lifecycle
-- Resource usage
-- Network activity
+## Development Status
 
-## 📝 Custom Rules
+### PHASE 0: Foundation & Environment Setup ✅ (In Progress)
+- [x] Repository structure
+- [x] Go module initialization
+- [x] Build system setup
+- [ ] Configuration templates
+- [ ] Architecture documentation
 
-As regras customizadas estão em: `./custom-rules/docker-rules.xml`
+### PHASE 1: Network Intelligence Layer (Upcoming)
+- [ ] High-Performance DNS Resolver
+- [ ] Transparent Proxy Engine
+- [ ] Network Topology Mapper
 
-Incluem detecção de:
-- ✅ Container crashes e restarts
-- ✅ Alto uso de CPU/Memory
-- ✅ Tentativas de autenticação falhadas
-- ✅ Brute force attacks
-- ✅ SQL injection attempts
-- ✅ Network anomalies
-- ✅ Privilege escalation
-- ✅ File integrity violations
-- ✅ Web server errors (4xx/5xx)
-- ✅ GPU alerts
+### PHASE 2: Asset Discovery (Upcoming)
+- [ ] Multi-layer discovery
+- [ ] Attack surface mapping
+- [ ] Continuous reconciliation
 
-## 🎯 Monitoramento Ativo
+### PHASE 3: Firefox Integration (Upcoming)
+- [ ] Hardened browser configuration
+- [ ] WebDriver automation
+- [ ] Forensic logging
 
-### Verificar Agentes Conectados
+### PHASE 4: Modern Frontend (Upcoming)
+- [ ] Svelte dashboard
+- [ ] Real-time WebSocket integration
+- [ ] Customization engine
 
-```bash
-docker exec -it wazuh-manager /var/ossec/bin/agent_control -l
-```
+### PHASE 5: NAS Integration (Upcoming)
+- [ ] Encrypted storage
+- [ ] Integrity verification
+- [ ] Snapshot management
 
-### Ver Alertas em Tempo Real
+### PHASE 6: Analytics Engine (Upcoming)
+- [ ] Stream processing
+- [ ] Correlation rules
+- [ ] ML-based anomaly detection
 
-```bash
-docker exec -it wazuh-manager tail -f /var/ossec/logs/alerts/alerts.log
-```
+---
 
-### API do Wazuh
+## Performance Targets
 
-```bash
-# Listar agentes
-curl -k -X GET "http://localhost:55000/agents" \
-  -H "Authorization: Bearer $(curl -u wazuh-wui:MyS3cr37P450r.*- -k -X POST 'http://localhost:55000/security/user/authenticate' | jq -r .data.token)"
-```
+- **UI Response Time**: <100ms (p95)
+- **Memory Footprint**: <500MB (idle)
+- **Network Overhead**: <5% of bandwidth
+- **Discovery Scan**: <60s for 1000 assets
 
-## 🔍 Casos de Uso
+---
 
-### 1. Detectar Brute Force
-- Monitora logs de autenticação
-- Alerta após 5 tentativas em 2 minutos
+## Security Model
 
-### 2. Monitorar Containers Unhealthy
-- Detecta containers em restart loop
-- Alerta sobre crashes
+### Threat Assumptions
+- Physical access is controlled
+- NAS is in trusted network segment
+- Operator is non-malicious (insider threat out of scope)
 
-### 3. Análise de Vulnerabilidades
-- Scanneia packages instalados
-- Alerta sobre CVEs conhecidas
+### Protections
+- Memory-safe language (Golang)
+- Input validation everywhere
+- No external dependencies at runtime
+- Reproducible builds
+- Encrypted data at rest
+- Immutable audit logs
 
-### 4. Compliance
-- PCI-DSS
-- GDPR
-- HIPAA
-- CIS benchmarks
+---
 
-## 🛠️ Comandos Úteis
+## Contributing
 
-```bash
-# Parar stack
-docker compose down
+This is a personal security infrastructure project. If you're interested in similar work:
 
-# Ver logs
-docker compose logs -f wazuh-manager
+1. Fork the repository
+2. Study the architecture in `/docs/architecture`
+3. Build your own variant
+4. Share learnings (not code) back
 
-# Reiniciar componente
-docker compose restart wazuh-dashboard
+---
 
-# Backup de configuração
-docker cp wazuh-manager:/var/ossec/etc ./backup-config
+## License
 
-# Ver regras ativas
-docker exec wazuh-manager /var/ossec/bin/ossec-logtest
-```
+**Proprietary** - Personal security infrastructure
+Not licensed for commercial use or distribution.
 
-## 🔐 Credenciais Padrão
+---
 
-**Wazuh Dashboard:**
-- User: `admin`
-- Pass: `SecretPassword`
+## Acknowledgments
 
-**Wazuh API:**
-- User: `wazuh-wui`
-- Pass: `MyS3cr37P450r.*-`
+Built with inspiration from:
+- The Art of Monitoring (James Turnbull)
+- Security Engineering (Ross Anderson)
+- Designing Data-Intensive Applications (Martin Kleppmann)
 
-⚠️ **IMPORTANTE:** Mude as senhas em produção!
+---
 
-## 📈 Próximos Passos
+## Contact
 
-1. ✅ Deploy do stack Wazuh
-2. 🔄 Instalar agentes nos containers
-3. 📊 Configurar dashboards customizados
-4. 🔔 Configurar alertas (Discord/Slack/Email)
-5. 📝 Criar playbooks de resposta
-6. 🔍 Integrar com threat intelligence feeds
+Project maintained by: Marcos Pina
+Repository: https://github.com/marcosfpina/O.W.A.S.A.K.A
 
-## 🐛 Troubleshooting
+---
 
-### Dashboard não carrega
-```bash
-docker compose logs wazuh-dashboard
-# Verifique se indexer está UP
-curl http://localhost:9200
-```
+**Status**: 🔨 Under Active Development - PHASE 0 Foundation
 
-### Agente não conecta
-```bash
-# No container do agente
-tail -f /var/ossec/logs/ossec.log
-# Verifique firewall e conectividade
-```
-
-### Performance lenta
-```bash
-# Aumente memória do indexer no docker-compose.yml
-OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
-```
+Last Updated: 2025-10-25
