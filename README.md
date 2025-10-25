@@ -137,13 +137,57 @@ O.W.A.S.A.K.A./
 
 ### Prerequisites
 
+**Option 1: Nix Flakes (Recommended for Development)**
+- **Nix with Flakes** - Reproducible development environment
+- All dependencies managed automatically
+- See [Nix Development Guide](docs/development/NIX_GUIDE.md)
+
+**Option 2: Manual Installation**
 - **Go 1.22+** (tested on 1.24.7)
 - **Node.js 18+** (for web UI)
 - **Dedicated hardware** (no shared environments)
 - **NAS cluster** (for persistent storage)
 - **Firefox ESR** (for browser integration)
 
-### Installation
+### Installation with Nix (Recommended)
+
+```bash
+# Clone the repository
+git clone https://github.com/marcosfpina/O.W.A.S.A.K.A.git
+cd O.W.A.S.A.K.A
+
+# Enter development environment (all dependencies auto-installed)
+nix develop
+
+# You'll see the O.W.A.S.A.K.A. welcome banner!
+# Now you have access to all tools: Go, Node.js, network tools, etc.
+
+# Build the project
+oswaka-dev build
+
+# Or use make directly
+make build
+
+# Run the SIEM
+oswaka-dev run
+
+# Hot reload development mode
+oswaka-dev watch
+
+# Show all available commands
+oswaka-dev help
+```
+
+**What's included in Nix environment:**
+- Go 1.22+, Node.js 20, Firefox ESR
+- Network tools: nmap, tcpdump, tshark, dig
+- Go tools: gopls, delve, golangci-lint, air
+- Development utilities: jq, ripgrep, bat, htop
+- Custom scripts and aliases
+
+See the [complete Nix guide](docs/development/NIX_GUIDE.md) for advanced usage.
+
+### Installation (Manual)
 
 ```bash
 # Clone the repository
