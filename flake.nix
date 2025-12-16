@@ -6,8 +6,14 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -197,68 +203,68 @@
 
           buildInputs = with pkgs; [
             # === Core Development ===
-            go          # Go 1.22+ (or latest available)
-            gotools          # godoc, goimports, etc.
-            gopls            # Go language server
-            delve            # Go debugger
+            go # Go 1.22+ (or latest available)
+            gotools # godoc, goimports, etc.
+            gopls # Go language server
+            delve # Go debugger
 
             # === Go Development Tools ===
-            golangci-lint    # Comprehensive linter
-            air              # Hot reload for Go
-            gotest           # Enhanced go test
-            gotestsum        # Pretty test output
+            golangci-lint # Comprehensive linter
+            air # Hot reload for Go
+            gotest # Enhanced go test
+            gotestsum # Pretty test output
 
             # === Build Tools ===
-            gnumake          # Make
-            gcc              # C compiler (for cgo if needed)
-            pkg-config       # Package config
+            gnumake # Make
+            gcc # C compiler (for cgo if needed)
+            pkg-config # Package config
 
             # === Version Control ===
-            git              # Git
-            gh               # GitHub CLI
+            git # Git
+            gh # GitHub CLI
 
             # === Frontend Development ===
-            nodejs_20        # Node.js 20 LTS
+            nodejs_24 # Node.js 20 LTS
             nodePackages.npm # npm
             nodePackages.pnpm # pnpm (faster alternative)
 
             # === Browser Integration ===
-            firefox-esr      # Firefox ESR for browser integration
+            firefox-esr # Firefox ESR for browser integration
 
             # === Network Analysis Tools (PHASE 1) ===
-            nmap             # Network scanner
-            tcpdump          # Packet capture
-            wireshark-cli    # tshark for packet analysis
-            bind             # dig, host, nslookup
-            iproute2         # ip command
-            netcat-gnu       # nc for network testing
-            socat            # Socket relay
-            iperf3           # Network performance
+            nmap # Network scanner
+            tcpdump # Packet capture
+            wireshark-cli # tshark for packet analysis
+            bind # dig, host, nslookup
+            iproute2 # ip command
+            netcat-gnu # nc for network testing
+            socat # Socket relay
+            iperf3 # Network performance
 
             # === Container Tools (PHASE 2) ===
-            docker           # Docker CLI
-            docker-compose   # Docker Compose
+            docker # Docker CLI
+            docker-compose # Docker Compose
 
             # === Security Tools ===
-            openssl          # SSL/TLS toolkit
-            gnupg            # GPG for signing
+            openssl # SSL/TLS toolkit
+            gnupg # GPG for signing
 
             # === Documentation ===
-            mdbook           # Markdown book generator
-            graphviz         # Graph visualization (for diagrams)
+            mdbook # Markdown book generator
+            graphviz # Graph visualization (for diagrams)
 
             # === Utilities ===
-            jq               # JSON processor
-            yq-go            # YAML processor
-            ripgrep          # Fast grep (rg)
-            fd               # Fast find
-            bat              # Better cat
-            htop             # Process monitor
-            bottom           # Modern htop alternative (btm)
+            jq # JSON processor
+            yq-go # YAML processor
+            ripgrep # Fast grep (rg)
+            fd # Fast find
+            bat # Better cat
+            htop # Process monitor
+            bottom # Modern htop alternative (btm)
 
             # === Development Scripts ===
-            devScripts       # Custom dev scripts
-            welcomeScript    # Welcome message
+            devScripts # Custom dev scripts
+            welcomeScript # Welcome message
           ];
 
           # Environment variables
