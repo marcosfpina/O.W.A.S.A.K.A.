@@ -109,6 +109,6 @@ func (l *Logger) WithFields(fields map[string]interface{}) *Logger {
 		args = append(args, k, v)
 	}
 	return &Logger{
-		SugaredLogger: l.SugaredLogger.With(args...),
+		SugaredLogger: l.With(args...),
 	}
 }

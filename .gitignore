@@ -4,9 +4,9 @@
 *.dll
 *.so
 *.dylib
-oswaka
+# oswaka (removed to allow cmd/oswaka directory)
 cmd/oswaka/oswaka
-
+.cache
 # Test binary, built with `go test -c`
 *.test
 

@@ -265,6 +265,9 @@
             # === Development Scripts ===
             devScripts # Custom dev scripts
             welcomeScript # Welcome message
+
+            # System Libraries
+            libpcap # Required for gopacket
           ];
 
           # Environment variables

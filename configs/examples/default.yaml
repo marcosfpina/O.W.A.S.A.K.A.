@@ -35,7 +35,7 @@ network:
   # DNS resolver
   dns:
     enabled: true
-    listen_address: "127.0.0.1:53"
+    listen_address: "127.0.0.1:8053"
     upstream_servers:
       - "1.1.1.1:53"
       - "8.8.8.8:53"
@@ -266,10 +266,8 @@ debug:
   pprof:
     enabled: false
     listen_address: "127.0.0.1:6060"
-  trace:
-    enabled: false
-  profiling:
-    enabled: false
+  trace: false
+  profiling: false
 
 # Security
 security:
