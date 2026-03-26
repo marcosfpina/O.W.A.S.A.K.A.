@@ -201,6 +201,9 @@
         devShells.default = pkgs.mkShell {
           name = "oswaka-dev";
 
+          # pkg-config as nativeBuildInput so CGO finds libpcap headers
+          nativeBuildInputs = with pkgs; [ pkg-config ];
+
           buildInputs = with pkgs; [
             # === Core Development ===
             go # Go 1.22+ (or latest available)
@@ -217,7 +220,6 @@
             # === Build Tools ===
             gnumake # Make
             gcc # C compiler (for cgo if needed)
-            pkg-config # Package config
 
             # === Version Control ===
             git # Git
@@ -359,6 +361,10 @@
           src = ./.;
 
           vendorHash = null; # Will be computed on first build
+
+          # CGO dependencies (gopacket/pcap requires libpcap)
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs = [ pkgs.libpcap ];
 
           # Skip tests during build (run them separately)
           checkPhase = "true";
