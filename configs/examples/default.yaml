@@ -137,10 +137,10 @@ discovery:
 
 # Browser integration (Firefox)
 browser:
-  enabled: false  # Disable by default
+  enabled: true  # Enable for testing
   firefox:
-    binary_path: "/usr/bin/firefox-esr"
-    profile_dir: "/var/lib/oswaka/firefox_profiles"
+    binary_path: "firefox"
+    profile_dir: ""
     hardening_enabled: true
     extension_lockdown: true
     telemetry_disabled: true
@@ -183,7 +183,7 @@ storage:
 
   # Local storage (fallback if NAS unavailable)
   local:
-    data_dir: "/var/lib/oswaka/data"
+    data_dir: "./data"
     max_size_gb: 100
     cleanup_policy: "oldest_first"
 
@@ -286,3 +286,6 @@ security:
   rbac:
     enabled: false
     roles_file: "/etc/oswaka/roles.yaml"
+
+# NATS event bus (Spectre)
+nats_url: "nats://localhost:4222"

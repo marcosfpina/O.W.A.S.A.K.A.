@@ -1,0 +1,98 @@
+:root {
+  --bg-darker: #060606;
+  --bg-dark: #0A0A0A;
+  --fg-base: #E0E0E0;
+  --fg-muted: #808080;
+  --accent-cyan: hsl(190, 100%, 55%);
+  --accent-green: hsl(150, 100%, 50%);
+  --accent-red: hsl(355, 100%, 65%);
+  
+  --glass-bg: rgba(20, 20, 22, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-blur: 16px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-darker);
+  background-image: radial-gradient(circle at 50% 0%, rgba(30,30,40,0.4) 0%, var(--bg-darker) 70%);
+  color: var(--fg-base);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism Design System */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.8);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Utility Colors */
+.text-cyan { color: var(--accent-cyan); }
+.text-green { color: var(--accent-green); }
+.text-red { color: var(--accent-red); }
+.text-muted { color: var(--fg-muted); }
+
+/* Typography */
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.03em; }
+h1 { font-size: 2.5rem; margin-bottom: 0.25rem; }
+h2 { font-size: 1.5rem; margin-bottom: 1rem; color: #fff; }
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--glass-border);
+}
+
+.status-badge.online {
+    color: var(--accent-green);
+    border-color: rgba(0, 255, 128, 0.2);
+}
+
+.status-badge.offline {
+    color: var(--accent-red);
+    border-color: rgba(255, 0, 0, 0.2);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+.status-badge.online .status-dot { background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green); }
+.status-badge.offline .status-dot { background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red); }
+
+/* Animations */
+@keyframes fadeInSlide {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-enter {
+  animation: fadeInSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

@@ -7,6 +7,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/events"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/config"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/logging"
 )
@@ -18,14 +19,16 @@ type Scanner struct {
 	handle    *pcap.Handle
 	stopChan  chan struct{}
 	isRunning bool
+	pipeline  *events.Pipeline
 }
 
 // NewScanner creates a new passive scanner
-func NewScanner(cfg *config.ScanConfig, logger *logging.Logger) *Scanner {
+func NewScanner(cfg *config.ScanConfig, logger *logging.Logger, pl *events.Pipeline) *Scanner {
 	return &Scanner{
-		cfg:      cfg,
-		logger:   logger,
-		stopChan: make(chan struct{}),
+		cfg:       cfg,
+		logger:    logger,
+		stopChan:  make(chan struct{}),
+		pipeline:  pl,
 	}
 }
 

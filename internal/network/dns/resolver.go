@@ -5,26 +5,31 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
+	"github.com/google/uuid"
 
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/events"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/models"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/config"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/logging"
 )
 
 // Resolver handles DNS queries
 type Resolver struct {
-	cfg    *config.DNSConfig
-	logger *logging.Logger
-	client *dns.Client
+	cfg       *config.DNSConfig
+	logger    *logging.Logger
+	client    *dns.Client
+	pipeline  *events.Pipeline
 }
 
 // NewResolver creates a new DNS resolver
-func NewResolver(cfg *config.DNSConfig, logger *logging.Logger) *Resolver {
+func NewResolver(cfg *config.DNSConfig, logger *logging.Logger, pipeline *events.Pipeline) *Resolver {
 	return &Resolver{
 		cfg:    cfg,
 		logger: logger,
 		client: &dns.Client{
 			Timeout: 2 * time.Second,
 		},
+		pipeline: pipeline,
 	}
 }
 
@@ -45,6 +50,21 @@ func (r *Resolver) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 				"type", dns.TypeToString[q.Qtype],
 				"name", q.Name,
 			)
+		}
+
+		if r.pipeline != nil {
+			evt := models.NetworkEvent{
+				ID:          uuid.NewString(),
+				Type:        models.EventDNS,
+				Timestamp:   time.Now().UTC(),
+				Source:      w.RemoteAddr().String(),
+				Destination: "SIEM_DNS",
+				Metadata: map[string]any{
+					"type": dns.TypeToString[q.Qtype],
+					"name": q.Name,
+				},
+			}
+			r.pipeline.PushNetworkEvent(evt)
 		}
 
 		// Forward to upstream

@@ -21,6 +21,7 @@ type Config struct {
 	Metrics     MetricsConfig     `yaml:"metrics"`
 	Debug       DebugConfig       `yaml:"debug"`
 	Security    SecurityConfig    `yaml:"security"`
+	NatsURL     string            `yaml:"nats_url"`
 }
 
 // ServerConfig holds HTTP server configuration
@@ -131,6 +132,7 @@ type ContainerConfig struct {
 type AttackSurfaceConfig struct {
 	Enabled               bool     `yaml:"enabled"`
 	ScanIntervalMinutes   int      `yaml:"scan_interval_minutes"`
+	ConcurrentScans       int      `yaml:"concurrent_scans"`
 	PortRange             PortRange `yaml:"port_range"`
 	Protocols             []string `yaml:"protocols"`
 	DetectDormant         bool     `yaml:"detect_dormant"`

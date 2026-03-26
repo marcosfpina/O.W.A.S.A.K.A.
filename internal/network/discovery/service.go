@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/events"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/config"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/logging"
 )
@@ -17,11 +18,11 @@ type Service struct {
 }
 
 // NewService creates a new discovery service
-func NewService(cfg *config.ScanConfig, logger *logging.Logger) *Service {
+func NewService(cfg *config.ScanConfig, logger *logging.Logger, pipeline *events.Pipeline) *Service {
 	return &Service{
 		cfg:     cfg,
 		logger:  logger,
-		scanner: NewScanner(cfg, logger),
+		scanner: NewScanner(cfg, logger, pipeline),
 	}
 }
 

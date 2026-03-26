@@ -5,6 +5,7 @@ import (
 
 	"github.com/miekg/dns"
 
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/events"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/config"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/logging"
 )
@@ -18,8 +19,8 @@ type Service struct {
 }
 
 // NewService creates a new DNS service
-func NewService(cfg *config.DNSConfig, logger *logging.Logger) *Service {
-	resolver := NewResolver(cfg, logger)
+func NewService(cfg *config.DNSConfig, logger *logging.Logger, pipeline *events.Pipeline) *Service {
+	resolver := NewResolver(cfg, logger, pipeline)
 	return &Service{
 		cfg:      cfg,
 		logger:   logger,

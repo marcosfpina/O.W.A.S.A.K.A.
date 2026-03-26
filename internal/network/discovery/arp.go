@@ -3,8 +3,12 @@ package discovery
 import (
 	"encoding/binary"
 	"net"
+	"time"
 
 	"github.com/google/gopacket/layers"
+	"github.com/google/uuid"
+
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/models"
 )
 
 // handleARP processes ARP packets to discover devices
@@ -33,6 +37,22 @@ func (s *Scanner) handleARP(arp *layers.ARP) {
 		"mac", srcMAC.String(),
 		"operation", op,
 	)
+
+	if s.pipeline != nil {
+		evt := models.NetworkEvent{
+			ID:          uuid.NewString(),
+			Type:        models.EventARP,
+			Timestamp:   time.Now().UTC(),
+			Source:      srcIP.String(),
+			Destination: "SIEM_DISCOVERY",
+			Metadata: map[string]any{
+				"ip":        srcIP.String(),
+				"mac":       srcMAC.String(),
+				"operation": op,
+			},
+		}
+		s.pipeline.PushNetworkEvent(evt)
+	}
 }
 
 func ipToInt(ip net.IP) uint32 {
