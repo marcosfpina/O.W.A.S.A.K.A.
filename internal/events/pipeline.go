@@ -17,13 +17,20 @@ type CorrelationEngine interface {
 	AnalyzeAsset(asset models.Asset)
 }
 
+// TopologyMapper builds and maintains the live network topology graph
+type TopologyMapper interface {
+	OnAsset(a models.Asset)
+	OnEvent(e models.NetworkEvent)
+}
+
 // Pipeline operates as a universal bus unifying physical persistence, Web UI pushing, and NATS brokering
 type Pipeline struct {
-	repo   *db.Repository
-	hub    *api.WSHub
-	pub    *Publisher
-	logger *logging.Logger
-	engine CorrelationEngine
+	repo     *db.Repository
+	hub      *api.WSHub
+	pub      *Publisher
+	logger   *logging.Logger
+	engine   CorrelationEngine
+	topology TopologyMapper
 }
 
 // NewPipeline constructs an event dispatcher bridging all output formats
@@ -39,6 +46,11 @@ func NewPipeline(repo *db.Repository, hub *api.WSHub, pub *Publisher, logger *lo
 // SetEngine dynamically binds a Correlation module onto the live pipeline layer
 func (p *Pipeline) SetEngine(engine CorrelationEngine) {
 	p.engine = engine
+}
+
+// SetTopologyMapper binds a topology builder to the pipeline
+func (p *Pipeline) SetTopologyMapper(t TopologyMapper) {
+	p.topology = t
 }
 
 // PushNetworkEvent accepts an event structure and dispatches globally
@@ -83,7 +95,12 @@ func (p *Pipeline) PushNetworkEvent(e models.NetworkEvent) {
 		p.pub.Publish("events.network."+string(e.Type), out)
 	}
 
-	// 5. Fire un-blocking analysis asynchronously against the Threat module
+	// 5. Feed topology mapper to track source/destination connections
+	if p.topology != nil && e.Type != models.EventAlert {
+		go p.topology.OnEvent(e)
+	}
+
+	// 6. Fire un-blocking analysis asynchronously against the Threat module
 	if p.engine != nil && e.Type != models.EventAlert {
 		go p.engine.Analyze(e)
 	}
@@ -119,7 +136,12 @@ func (p *Pipeline) PushAsset(a models.Asset) {
 		p.hub.Broadcast(envelope)
 	}
 
-	// 3. Inform external services consuming NATS optionally
+	// 3. Update topology graph with the new asset
+	if p.topology != nil {
+		go p.topology.OnAsset(a)
+	}
+
+	// 4. Inform external services consuming NATS optionally
 	if p.pub != nil {
 		data, _ := json.Marshal(a)
 		payload := map[string]any{"asset": string(data)}

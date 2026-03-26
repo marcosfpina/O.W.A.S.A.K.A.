@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,6 +18,7 @@ import (
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/events"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/network/discovery"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/network/dns"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/network/topology"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/storage/db"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/config"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/logging"
@@ -79,10 +82,6 @@ func (a *App) Run() error {
 
 	// M3 Command Center API (WebSocket/HTTP)
 	apiServer := api.NewServer(&a.cfg.Server, a.logger)
-	if err := apiServer.Start(ctx); err != nil {
-		a.logger.Errorw("Failed to start API Server", "error", err)
-	}
-	defer apiServer.Stop()
 
 	// Milestone 4: Correlation Engine (Threat Detection)
 	engine := correlation.NewEngine(&a.cfg.Analytics.Correlation, a.logger)
@@ -93,6 +92,33 @@ func (a *App) Run() error {
 	// Hook Engine into Pipeline
 	pipeline.SetEngine(engine)
 	engine.SetAlertCallback(pipeline.PushNetworkEvent)
+
+	// Topology Mapper — builds live network graph from asset/event streams
+	topoBuilder := topology.NewBuilder(a.logger)
+	topoBuilder.OnChange(func(snap topology.GraphSnapshot) {
+		// Push TOPOLOGY_UPDATE to all connected WebSocket clients
+		msg := map[string]any{
+			"type": "TOPOLOGY_UPDATE",
+			"data": topology.ToD3(snap),
+		}
+		apiServer.Hub.Broadcast(msg)
+	})
+	pipeline.SetTopologyMapper(topoBuilder)
+
+	// Register REST endpoint for full topology snapshot
+	apiServer.RegisterHandler("/api/topology", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		snap := topoBuilder.Snapshot()
+		if err := json.NewEncoder(w).Encode(topology.ToD3(snap)); err != nil {
+			a.logger.Errorw("Failed to encode topology", "error", err)
+		}
+	})
+
+	if err := apiServer.Start(ctx); err != nil {
+		a.logger.Errorw("Failed to start API Server", "error", err)
+	}
+	defer apiServer.Stop()
 
 	// Initialize Services
 	dnsService := dns.NewService(&a.cfg.Network.DNS, a.logger, pipeline)

@@ -4,12 +4,21 @@
     import * as d3 from 'd3';
 
     let svgContainer: HTMLElement;
-    
+
     let nodes: any[] = [];
     let links: any[] = [];
     let simulation: d3.Simulation<any, any>;
 
-    onMount(() => {
+    const NODE_COLORS: Record<string, string> = {
+        host:      '#00ffd5',
+        router:    '#ffd700',
+        container: '#7b68ee',
+        vm:        '#ff8c00',
+        unknown:   '#888888',
+        THREAT:    '#ff3333',
+    };
+
+    onMount(async () => {
         const width = svgContainer.clientWidth;
         const height = svgContainer.clientHeight || 450;
 
@@ -30,6 +39,17 @@
 
         let linkSelection = g.append("g").attr("class", "links").selectAll(".link");
         let nodeSelection = g.append("g").attr("class", "nodes").selectAll(".node");
+
+        // Load initial topology snapshot from REST
+        try {
+            const resp = await fetch('http://127.0.0.1:8080/api/topology');
+            if (resp.ok) {
+                const snap = await resp.json();
+                nodes = (snap.nodes || []).map((n: any) => ({...n}));
+                links = (snap.links || []).map((l: any) => ({...l}));
+                updateGraph();
+            }
+        } catch (_) { /* backend not yet ready — wait for WS events */ }
 
         function updateGraph() {
             // Re-bind links
@@ -55,7 +75,7 @@
 
             nodeEnter.append("circle")
                 .attr("r", 10)
-                .attr("fill", d => d.type === 'THREAT' ? '#ff3333' : '#00ffd5')
+                .attr("fill", (d: any) => NODE_COLORS[d.type] ?? '#00ffd5')
                 .attr("stroke", "rgba(255,255,255,0.2)")
                 .attr("stroke-width", 2);
 
@@ -88,45 +108,53 @@
         // Live stream bindings
         const unsubscribe = networkEvents.subscribe(events => {
             if (!events.length) return;
-            const ev = events[0]; 
-            
+            const ev = events[0];
+
+            // Full topology replacement from backend mapper
+            if (ev.type === 'TOPOLOGY_UPDATE' && ev.data) {
+                nodes = (ev.data.nodes || []).map((n: any) => ({...n}));
+                links = (ev.data.links || []).map((l: any) => ({...l}));
+                updateGraph();
+                return;
+            }
+
+            // Incremental update from raw network events
             let sourceId = ev.source || "Unknown";
             let destId = ev.destination || "Broadcast";
 
             if (ev.type === 'THREAT_ALERT') destId = ev.metadata?.target || destId;
 
-            // Upsert source
-            let sNode = nodes.find(n => n.id === sourceId);
+            const nodeType = ev.type === 'THREAT_ALERT' ? 'THREAT' : 'unknown';
+
+            let sNode = nodes.find((n: any) => n.id === sourceId);
             if (!sNode) {
-                sNode = { id: sourceId, type: ev.type === 'THREAT_ALERT' ? 'THREAT' : 'NORMAL' };
+                sNode = { id: sourceId, label: sourceId, type: nodeType };
                 nodes.push(sNode);
             }
-            if (ev.type === 'THREAT_ALERT') sNode.type = 'THREAT'; // Promote to threat if involved
+            if (ev.type === 'THREAT_ALERT') sNode.type = 'THREAT';
 
-            // Upsert dest
-            let dNode = nodes.find(n => n.id === destId);
+            let dNode = nodes.find((n: any) => n.id === destId);
             if (!dNode) {
-                dNode = { id: destId, type: ev.type === 'THREAT_ALERT' ? 'THREAT' : 'NORMAL' };
+                dNode = { id: destId, label: destId, type: nodeType };
                 nodes.push(dNode);
             }
             if (ev.type === 'THREAT_ALERT') dNode.type = 'THREAT';
 
-            // Connect
-            const existingLink = links.find(l => 
-                (l.source.id === sourceId && l.target.id === destId) ||
-                (l.source.id === sourceId && l.target === destId)
+            const existingLink = links.find((l: any) =>
+                (l.source?.id === sourceId || l.source === sourceId) &&
+                (l.target?.id === destId   || l.target === destId)
             );
-            
             if (!existingLink && sourceId !== destId) {
                 links.push({ source: sourceId, target: destId });
             }
 
-            // Cull massive networks to preserve SVG FrameRate
             if (nodes.length > 40) {
-                // simple cleanup, not perfect structure preservation but keeps it fast
                 nodes = nodes.slice(-40);
-                const validIds = new Set(nodes.map(n => n.id));
-                links = links.filter(l => validIds.has(l.source.id || l.source) && validIds.has(l.target.id || l.target));
+                const validIds = new Set(nodes.map((n: any) => n.id));
+                links = links.filter((l: any) =>
+                    validIds.has(l.source?.id ?? l.source) &&
+                    validIds.has(l.target?.id ?? l.target)
+                );
             }
 
             updateGraph();
