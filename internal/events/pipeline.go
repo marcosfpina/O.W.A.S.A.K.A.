@@ -23,6 +23,11 @@ type TopologyMapper interface {
 	OnEvent(e models.NetworkEvent)
 }
 
+// StreamEnricher normalizes events and annotates them with sliding-window context
+type StreamEnricher interface {
+	Enrich(e models.NetworkEvent) models.NetworkEvent
+}
+
 // Pipeline operates as a universal bus unifying physical persistence, Web UI pushing, and NATS brokering
 type Pipeline struct {
 	repo     *db.Repository
@@ -31,6 +36,7 @@ type Pipeline struct {
 	logger   *logging.Logger
 	engine   CorrelationEngine
 	topology TopologyMapper
+	stream   StreamEnricher
 }
 
 // NewPipeline constructs an event dispatcher bridging all output formats
@@ -53,6 +59,11 @@ func (p *Pipeline) SetTopologyMapper(t TopologyMapper) {
 	p.topology = t
 }
 
+// SetStreamEnricher binds the stream processor to the pipeline
+func (p *Pipeline) SetStreamEnricher(s StreamEnricher) {
+	p.stream = s
+}
+
 // PushNetworkEvent accepts an event structure and dispatches globally
 func (p *Pipeline) PushNetworkEvent(e models.NetworkEvent) {
 	// 1. Hydrate defaults safely
@@ -61,6 +72,11 @@ func (p *Pipeline) PushNetworkEvent(e models.NetworkEvent) {
 	}
 	if e.Timestamp.IsZero() {
 		e.Timestamp = time.Now()
+	}
+
+	// 1b. Normalize and enrich with sliding-window context
+	if p.stream != nil {
+		e = p.stream.Enrich(e)
 	}
 
 	// 2. Persist cleanly to disk locally via BoltDB

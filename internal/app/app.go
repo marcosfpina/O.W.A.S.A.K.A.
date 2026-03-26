@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/analytics/correlation"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/analytics/stream"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/api"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/browser/firefox"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/discovery/attack_surface"
@@ -83,6 +84,10 @@ func (a *App) Run() error {
 	// M3 Command Center API (WebSocket/HTTP)
 	apiServer := api.NewServer(&a.cfg.Server, a.logger)
 
+	// Stream Processor — normalizes + enriches events with sliding-window context
+	streamProc := stream.NewProcessor(&a.cfg.Analytics.Stream, a.logger)
+	streamProc.Start(ctx)
+
 	// Milestone 4: Correlation Engine (Threat Detection)
 	engine := correlation.NewEngine(&a.cfg.Analytics.Correlation, a.logger)
 
@@ -92,6 +97,7 @@ func (a *App) Run() error {
 	// Hook Engine into Pipeline
 	pipeline.SetEngine(engine)
 	engine.SetAlertCallback(pipeline.PushNetworkEvent)
+	pipeline.SetStreamEnricher(streamProc)
 
 	// Topology Mapper — builds live network graph from asset/event streams
 	topoBuilder := topology.NewBuilder(a.logger)
@@ -104,6 +110,15 @@ func (a *App) Run() error {
 		apiServer.Hub.Broadcast(msg)
 	})
 	pipeline.SetTopologyMapper(topoBuilder)
+
+	// Register REST endpoint for stream processor stats
+	apiServer.RegisterHandler("/api/stats", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if err := json.NewEncoder(w).Encode(streamProc.Stats()); err != nil {
+			a.logger.Errorw("Failed to encode stream stats", "error", err)
+		}
+	})
 
 	// Register REST endpoint for full topology snapshot
 	apiServer.RegisterHandler("/api/topology", func(w http.ResponseWriter, r *http.Request) {
