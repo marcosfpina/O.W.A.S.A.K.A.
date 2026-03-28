@@ -10,17 +10,23 @@ import (
 	"time"
 
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/analytics/correlation"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/analytics/ml"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/analytics/stream"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/api"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/browser/automation"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/browser/firefox"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/discovery/attack_surface"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/discovery/physical"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/discovery/reconciliation"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/discovery/virtual"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/events"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/network/discovery"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/network/dns"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/network/proxy"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/network/topology"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/storage/db"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/storage/integrity"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/storage/nas"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/config"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/logging"
 )
@@ -99,6 +105,13 @@ func (a *App) Run() error {
 	engine.SetAlertCallback(pipeline.PushNetworkEvent)
 	pipeline.SetStreamEnricher(streamProc)
 
+	// ML Anomaly Detector — Isolation Forest + behavioral baselining
+	mlService := ml.NewService(&a.cfg.Analytics.ML, a.logger, pipeline)
+	if err := mlService.Start(ctx); err != nil {
+		a.logger.Errorw("Failed to start ML Anomaly Detector", "error", err)
+	}
+	pipeline.SetEventObserver(mlService)
+
 	// Topology Mapper — builds live network graph from asset/event streams
 	topoBuilder := topology.NewBuilder(a.logger)
 	topoBuilder.OnChange(func(snap topology.GraphSnapshot) {
@@ -162,16 +175,53 @@ func (a *App) Run() error {
 		a.logger.Errorw("Failed to start Physical Enumeration service", "error", err)
 	}
 
-	virtualService := virtual.NewService(&a.cfg.Discovery.Containers, a.logger, pipeline)
+	virtualService := virtual.NewService(&a.cfg.Discovery.Containers, &a.cfg.Discovery.Virtual, a.logger, pipeline)
 	if err := virtualService.Start(ctx); err != nil {
 		a.logger.Errorw("Failed to start Virtual Discovery service", "error", err)
 	}
+
+	// Continuous Reconciliation Engine — drift detection
+	reconEngine := reconciliation.NewEngine(&a.cfg.Discovery.Reconciliation, repository, pipeline, a.logger)
+	if err := reconEngine.Start(ctx); err != nil {
+		a.logger.Errorw("Failed to start Reconciliation Engine", "error", err)
+	}
+
+	// Transparent Proxy Engine — HTTP/HTTPS interception + DPI
+	proxyService := proxy.NewService(&a.cfg.Network.Proxy, a.logger, pipeline)
+	if err := proxyService.Start(ctx); err != nil {
+		a.logger.Errorw("Failed to start Proxy service", "error", err)
+	}
+	defer proxyService.Stop()
 
 	// M2 Browser Hardening
 	firefoxService := firefox.NewService(&a.cfg.Browser, a.logger)
 	if err := firefoxService.Start(ctx); err != nil {
 		a.logger.Errorw("Failed to start Firefox service", "error", err)
 	}
+
+	// Browser Automation — CDP forensic logging
+	autoService := automation.NewService(&a.cfg.Browser.Automation, a.logger, pipeline, a.cfg.Storage.Local.DataDir)
+	if err := autoService.Start(ctx); err != nil {
+		a.logger.Errorw("Failed to start Browser Automation", "error", err)
+	}
+
+	// Integrity Verifier — Merkle trees + immutable audit log
+	integrityService, err := integrity.NewService(&a.cfg.Storage.Integrity, repository, pipeline, a.logger)
+	if err != nil {
+		a.logger.Errorw("Failed to initialize Integrity Verifier", "error", err)
+	} else {
+		if err := integrityService.Start(ctx); err != nil {
+			a.logger.Errorw("Failed to start Integrity Verifier", "error", err)
+		}
+		defer integrityService.Stop()
+	}
+
+	// NAS Connector — air-gapped NFS/SMB storage
+	nasService := nas.NewService(&a.cfg.Storage.NAS, a.logger, pipeline)
+	if err := nasService.Start(ctx); err != nil {
+		a.logger.Errorw("Failed to start NAS Connector", "error", err)
+	}
+	defer nasService.Stop(ctx)
 
 	a.logger.Info("System ready and waiting for signals (Press Ctrl+C to stop)")
 

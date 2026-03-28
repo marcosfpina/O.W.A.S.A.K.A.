@@ -14,14 +14,16 @@ type Launcher struct {
 	cfg     *config.FirefoxConfig
 	logger  *logging.Logger
 	profile *ProfileManager
+	policy  *PolicyEnforcer
 }
 
 // NewLauncher creates a new browser launcher
-func NewLauncher(cfg *config.FirefoxConfig, logger *logging.Logger) *Launcher {
+func NewLauncher(cfg *config.FirefoxConfig, browserCfg *config.BrowserConfig, logger *logging.Logger) *Launcher {
 	return &Launcher{
 		cfg:     cfg,
 		logger:  logger,
 		profile: NewProfileManager(cfg),
+		policy:  NewPolicyEnforcer(browserCfg, logger),
 	}
 }
 
@@ -43,16 +45,21 @@ func (l *Launcher) Launch(ctx context.Context) error {
 		}
 	}()
 
+	// 2. Apply enterprise policies (cannot be overridden by user)
+	if err := l.policy.Apply(profileDir); err != nil {
+		l.logger.Warnw("Failed to apply enterprise policies", "error", err)
+	}
+
 	l.logger.Infow("Launching Hardened Firefox", "binary", binPath, "profile", profileDir)
 
-	// 2. Build command arguments
+	// 3. Build command arguments
 	args := []string{
 		"--profile", profileDir,
 		"--no-remote",
 		"--new-instance",
 	}
 
-	// 3. Execute process bound strictly to the provided context
+	// 4. Execute process bound strictly to the provided context
 	cmd := exec.CommandContext(ctx, binPath, args...)
 
 	// We pipe stdout/err to null to keep SIEM logs clean from Firefox's noisy GTK logs

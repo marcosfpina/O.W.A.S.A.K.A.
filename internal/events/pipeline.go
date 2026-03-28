@@ -28,6 +28,11 @@ type StreamEnricher interface {
 	Enrich(e models.NetworkEvent) models.NetworkEvent
 }
 
+// EventObserver receives a copy of every event for passive analysis (e.g., ML).
+type EventObserver interface {
+	Observe(e models.NetworkEvent)
+}
+
 // Pipeline operates as a universal bus unifying physical persistence, Web UI pushing, and NATS brokering
 type Pipeline struct {
 	repo     *db.Repository
@@ -37,6 +42,7 @@ type Pipeline struct {
 	engine   CorrelationEngine
 	topology TopologyMapper
 	stream   StreamEnricher
+	observer EventObserver
 }
 
 // NewPipeline constructs an event dispatcher bridging all output formats
@@ -62,6 +68,11 @@ func (p *Pipeline) SetTopologyMapper(t TopologyMapper) {
 // SetStreamEnricher binds the stream processor to the pipeline
 func (p *Pipeline) SetStreamEnricher(s StreamEnricher) {
 	p.stream = s
+}
+
+// SetEventObserver binds a passive observer (e.g., ML anomaly detector) to the pipeline
+func (p *Pipeline) SetEventObserver(o EventObserver) {
+	p.observer = o
 }
 
 // PushNetworkEvent accepts an event structure and dispatches globally
@@ -119,6 +130,11 @@ func (p *Pipeline) PushNetworkEvent(e models.NetworkEvent) {
 	// 6. Fire un-blocking analysis asynchronously against the Threat module
 	if p.engine != nil && e.Type != models.EventAlert {
 		go p.engine.Analyze(e)
+	}
+
+	// 7. Feed passive observers (ML anomaly detection)
+	if p.observer != nil && e.Type != models.EventAlert {
+		go p.observer.Observe(e)
 	}
 }
 

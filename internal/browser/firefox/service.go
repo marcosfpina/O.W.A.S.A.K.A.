@@ -19,7 +19,7 @@ func NewService(cfg *config.BrowserConfig, logger *logging.Logger) *Service {
 	return &Service{
 		cfg:      cfg,
 		logger:   logger,
-		launcher: NewLauncher(&cfg.Firefox, logger),
+		launcher: NewLauncher(&cfg.Firefox, cfg, logger),
 	}
 }
 

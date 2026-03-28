@@ -47,6 +47,23 @@ func (r *Repository) GetAsset(id string) (*models.Asset, error) {
 	return &a, nil
 }
 
+// ListAssets returns all stored assets.
+func (r *Repository) ListAssets() ([]models.Asset, error) {
+	var assets []models.Asset
+	err := r.db.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(BucketAssets))
+		return b.ForEach(func(k, v []byte) error {
+			var a models.Asset
+			if err := json.Unmarshal(v, &a); err != nil {
+				return nil // skip corrupt entries
+			}
+			assets = append(assets, a)
+			return nil
+		})
+	})
+	return assets, err
+}
+
 // LogEvent streams a forensic event to BoltDB mapping an ID to structure
 func (r *Repository) LogEvent(e *models.NetworkEvent) error {
 	return r.db.db.Update(func(tx *bolt.Tx) error {
