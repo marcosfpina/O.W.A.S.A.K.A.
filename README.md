@@ -329,55 +329,33 @@ Every module above is initialized, started, and connected to the central event p
 
 ---
 
-## Production Readiness — Gaps
+## Production Readiness — Resolved Gaps
 
+| Gap | Was | Now | Commit |
+|---|---|---|---|
+| Test coverage | <5% (2 tests) | **35 tests** across 6 packages | `394f9b6` |
+| Correlation rules | 1 hardcoded rule | **YAML rule engine + 10 baseline rules** | `394f9b6` |
+| DNS cache | No cache (TODO) | **In-memory TTL cache + background evictor** | `394f9b6` |
+| ML persistence | Retrained from zero | **gob serialization, auto-save/load** | `394f9b6` |
+| Scanner targets | Hardcoded localhost | **Dynamic from BoltDB asset list** | `394f9b6` |
+| CI/CD | None | **GitHub Actions (build+vet+test -race)** | `394f9b6` |
+
+### Remaining
 | Gap | Severity | Detail |
 |---|---|---|
-| Test coverage <5% | **CRITICAL** | 1 test file (vault_test.go), 2 tests. 24 packages untested |
-| 1 hardcoded correlation rule | **CRITICAL** | Only `DNSExfiltrationRule` (checks "evil.com"). No YAML/Sigma rule loading |
-| DNS resolver has no cache | **HIGH** | TODO in code. All queries forwarded upstream without caching |
-| ML model not persisted | **HIGH** | Isolation Forest retrains from zero on every restart |
-| Attack surface scans localhost only | **HIGH** | Hardcoded 127.0.0.1 — should target discovered assets |
-| No CI/CD pipeline | **MEDIUM** | No GitHub Actions workflows |
-| No OpenTelemetry | **LOW** | Spectre integration works via NATS; OTel is a nice-to-have |
+| OpenTelemetry | LOW | Spectre integration works via NATS; OTel is a nice-to-have |
+| Rule hot-reload | LOW | Rules load on startup; restart required for changes |
+| Event pipeline tests | MEDIUM | Pipeline + API + topology packages still untested |
 
 ---
 
-## Sprint: Production Hardening (deadline: 2026-04-18)
+## Sprint Log
 
-### P1 — Test Coverage (CRITICAL)
-| Task | Package | Validates |
-|---|---|---|
-| Event pipeline unit tests | `internal/events/` | Push/subscribe/broadcast flow |
-| Correlation engine tests | `internal/analytics/correlation/` | Rule matching, false positive rate |
-| Stream processor tests | `internal/analytics/stream/` | Window counters, enrichment |
-| ML anomaly detector tests | `internal/analytics/ml/` | Training, scoring, z-score thresholds |
-| DNS resolver tests | `internal/network/dns/` | Query forwarding, response parsing |
-| Topology builder tests | `internal/network/topology/` | Graph consistency, D3 JSON export |
-| BoltDB repository tests | `internal/storage/db/` | CRUD operations, bucket isolation |
-| Attack surface scanner tests | `internal/discovery/attack_surface/` | Port probe, banner grab |
-| API/WebSocket tests | `internal/api/` | HTTP endpoints, WS upgrade |
-| Integration test: boot → event → persist | `internal/app/` | Full pipeline end-to-end |
-
-### P2 — Threat Detection (CRITICAL)
-| Task | File(s) |
-|---|---|
-| YAML rule loader (read from `configs/rules/`) | `internal/analytics/correlation/` |
-| Port 10+ baseline rules: port scan, brute force, DNS tunnel, C2 beacon, lateral movement | `configs/rules/*.yaml` |
-| Rule hot-reload without restart | `internal/analytics/correlation/` |
-
-### P3 — Operational Correctness (HIGH)
-| Task | File(s) |
-|---|---|
-| DNS response cache with TTL | `internal/network/dns/resolver.go` |
-| ML model serialize/deserialize (gob or protobuf) | `internal/analytics/ml/` |
-| Scanner targets from asset DB instead of localhost | `internal/discovery/attack_surface/service.go` |
-
-### P4 — CI/CD & Release (MEDIUM)
-| Task | File(s) |
-|---|---|
-| GitHub Actions: build + test + lint on PR | `.github/workflows/ci.yml` |
-| `make release` target with version injection | `Makefile` |
+### Sprint 1: Production Hardening (2026-03-28) — COMPLETE
+- **P1** Test coverage: 35 tests (correlation, ML, stream, BoltDB, attack surface)
+- **P2** YAML rule engine + 10 detection rules (port scan, DNS tunnel, brute force, ARP spoof, lateral movement, service enum, malicious TLD, suspicious proxy, VM escape, anomalous volume)
+- **P3** DNS cache, ML model persistence (gob), scanner dynamic targets from asset DB
+- **P4** GitHub Actions CI, `make release` target
 
 ---
 
@@ -441,6 +419,6 @@ Repository: https://github.com/marcosfpina/O.W.A.S.A.K.A
 
 ---
 
-**Status**: 🚧 Pre-Production — Core modules integrated, wiring sprints in progress
+**Status**: 🚀 Pre-Production — Core modules integrated, hardening sprint complete
 
 Last Updated: 2026-03-28
