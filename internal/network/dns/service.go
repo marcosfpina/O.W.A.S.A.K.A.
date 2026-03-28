@@ -42,6 +42,9 @@ func (s *Service) Start(ctx context.Context) error {
 
 	s.logger.Infow("Starting DNS Service", "address", s.cfg.ListenAddress)
 
+	// Start DNS cache evictor
+	s.resolver.StartCacheEvictor(ctx)
+
 	// Start server in a goroutine
 	go func() {
 		if err := s.server.ListenAndServe(); err != nil {

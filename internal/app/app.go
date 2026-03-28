@@ -165,7 +165,7 @@ func (a *App) Run() error {
 	}
 
 	// M2 Services
-	attackSurface := attack_surface.NewService(&a.cfg.Discovery.AttackSurface, a.logger, pipeline)
+	attackSurface := attack_surface.NewService(&a.cfg.Discovery.AttackSurface, a.logger, pipeline, repository)
 	if err := attackSurface.Start(ctx); err != nil {
 		a.logger.Errorw("Failed to start Attack Surface Scanner", "error", err)
 	}

@@ -1,14 +1,16 @@
 package ml
 
 import (
+	"encoding/gob"
 	"math"
 	"math/rand"
+	"os"
 )
 
 // IsolationForest implements the Isolation Forest anomaly detection algorithm.
 // Points that are isolated quickly (short average path length) are anomalies.
 type IsolationForest struct {
-	trees     []*iTree
+	trees     []*ITree
 	numTrees  int
 	maxDepth  int
 	threshold float64 // anomaly score threshold (0-1)
@@ -35,7 +37,7 @@ func NewIsolationForest(numTrees int, maxDepth int, threshold float64) *Isolatio
 // Train builds the isolation forest from training data.
 // Each row in data is a feature vector.
 func (f *IsolationForest) Train(data [][]float64) {
-	f.trees = make([]*iTree, f.numTrees)
+	f.trees = make([]*ITree, f.numTrees)
 	sampleSize := int(math.Min(256, float64(len(data))))
 
 	for i := 0; i < f.numTrees; i++ {
@@ -73,31 +75,52 @@ func (f *IsolationForest) Trained() bool {
 	return len(f.trees) > 0
 }
 
-// iTree is a single isolation tree node.
-type iTree struct {
-	left      *iTree
-	right     *iTree
-	splitAttr int     // feature index to split on
-	splitVal  float64 // split value
-	size      int     // number of samples at this node (for leaf nodes)
-	isLeaf    bool
+// Save serializes the trained forest to disk using gob encoding.
+func (f *IsolationForest) Save(path string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return gob.NewEncoder(file).Encode(f.trees)
 }
 
-func buildITree(data [][]float64, depth, maxDepth int) *iTree {
+// Load deserializes a trained forest from disk.
+func (f *IsolationForest) Load(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return gob.NewDecoder(file).Decode(&f.trees)
+}
+
+// ITree is a single isolation tree node.
+// Fields are exported for gob serialization.
+type ITree struct {
+	Left      *ITree
+	Right     *ITree
+	SplitAttr int     // feature index to split on
+	SplitVal  float64 // split value
+	Size      int     // number of samples at this node (for leaf nodes)
+	IsLeaf    bool
+}
+
+func buildITree(data [][]float64, depth, maxDepth int) *ITree {
 	if len(data) <= 1 || depth >= maxDepth {
-		return &iTree{isLeaf: true, size: len(data)}
+		return &ITree{IsLeaf: true, Size: len(data)}
 	}
 
 	dims := len(data[0])
 	if dims == 0 {
-		return &iTree{isLeaf: true, size: len(data)}
+		return &ITree{IsLeaf: true, Size: len(data)}
 	}
 
 	// Pick random attribute and split value
 	attr := rand.Intn(dims)
 	minVal, maxVal := minMax(data, attr)
 	if minVal == maxVal {
-		return &iTree{isLeaf: true, size: len(data)}
+		return &ITree{IsLeaf: true, Size: len(data)}
 	}
 
 	splitVal := minVal + rand.Float64()*(maxVal-minVal)
@@ -111,22 +134,22 @@ func buildITree(data [][]float64, depth, maxDepth int) *iTree {
 		}
 	}
 
-	return &iTree{
-		splitAttr: attr,
-		splitVal:  splitVal,
-		left:      buildITree(left, depth+1, maxDepth),
-		right:     buildITree(right, depth+1, maxDepth),
+	return &ITree{
+		SplitAttr: attr,
+		SplitVal:  splitVal,
+		Left:      buildITree(left, depth+1, maxDepth),
+		Right:     buildITree(right, depth+1, maxDepth),
 	}
 }
 
-func pathLength(point []float64, tree *iTree, depth int) int {
-	if tree.isLeaf {
-		return depth + int(averagePathLength(float64(tree.size)))
+func pathLength(point []float64, tree *ITree, depth int) int {
+	if tree.IsLeaf {
+		return depth + int(averagePathLength(float64(tree.Size)))
 	}
-	if point[tree.splitAttr] < tree.splitVal {
-		return pathLength(point, tree.left, depth+1)
+	if point[tree.SplitAttr] < tree.SplitVal {
+		return pathLength(point, tree.Left, depth+1)
 	}
-	return pathLength(point, tree.right, depth+1)
+	return pathLength(point, tree.Right, depth+1)
 }
 
 // averagePathLength computes the average path of unsuccessful search in a BST.

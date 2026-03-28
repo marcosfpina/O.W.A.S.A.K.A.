@@ -88,7 +88,7 @@ func (s *PortScanner) ScanHost(ctx context.Context, host string) <-chan PortResu
 
 // probe attempts a TCP connection and optionally grabs a banner
 func (s *PortScanner) probe(host string, port int) (bool, string) {
-	address := fmt.Sprintf("%s:%d", host, port)
+	address := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 	conn, err := net.DialTimeout("tcp", address, 500*time.Millisecond)
 	if err != nil {
 		return false, ""

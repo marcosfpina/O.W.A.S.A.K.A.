@@ -227,52 +227,157 @@ make docs
 Example configuration (`configs/examples/default.yaml`):
 
 ```yaml
-# Coming soon - PHASE 0 in progress
+# Server
+server:
+  host: "127.0.0.1"
+  port: 8080
+  websocket:
+    enabled: true
+    path: "/ws"
+    max_connections: 1000
+
+# Logging
+logging:
+  level: "info"      # debug, info, warn, error
+  format: "json"
+  output: "stdout"
+
+# Network intelligence
+network:
+  dns:
+    enabled: true
+    listen_address: "127.0.0.1:8053"
+    upstream_servers: ["1.1.1.1:53", "8.8.8.8:53"]
+    threat_detection: true
+  discovery:
+    enabled: true
+    scan_interval_minutes: 60
+    methods: [arp, icmp, mdns]
+
+# Attack surface mapping
+discovery:
+  attack_surface:
+    enabled: true
+    port_range: { start: 1, end: 65535 }
+    banner_grabbing: true
+
+# Analytics
+analytics:
+  stream:
+    enabled: true
+    workers: 4
+  correlation:
+    enabled: true
+    sigma_rules_enabled: true
+
+# Metrics
+metrics:
+  prometheus:
+    enabled: true
+    listen_address: "127.0.0.1:9090"
+
+# Spectre Fleet event bus
+nats_url: "nats://localhost:4222"
 ```
+
+Full reference: [`configs/examples/default.yaml`](configs/examples/default.yaml)
 
 ---
 
 ## Development Status
 
-### PHASE 0: Foundation & Environment Setup ✅ (Completed)
-- [x] Repository structure
-- [x] Go module initialization
-- [x] Build system setup and Nix derivations
-- [x] Configuration templates and validation
+### PHASE 0: Foundation & Environment Setup ✅
+- [x] Repository structure + Go module
+- [x] Build system (Makefile + Nix flake with `nix develop` shell)
+- [x] Configuration templates and validation (`pkg/config/`)
 - [x] Architecture documentation
 
-### PHASE 1: Network Intelligence Layer 🚧
-- [x] High-Performance DNS Resolver
-- [ ] Transparent Proxy Engine
-- [x] Network Topology Mapper
-- [x] BoltDB Event Persistence
+### PHASE 1: Network Intelligence Layer ✅
+- [x] High-performance DNS Resolver (`internal/network/dns/`) — miekg/dns, upstream forwarding, query logging
+- [x] Transparent Proxy (`internal/network/proxy/`) — HTTP/HTTPS MITM, DPI metadata extraction, TLS cert gen
+- [x] Network Topology Mapper (`internal/network/topology/`) — ARP + mDNS, D3.js graph export
+- [x] BoltDB Event Persistence (`internal/storage/db/`) — bbolt embedded KV store
 
-### PHASE 2: Asset Discovery 🚧
-- [ ] Multi-layer discovery (Physical)
-- [x] Virtual/Container discovery (Zero-Dependency Docker Scanner)
-- [ ] Attack surface mapping
-- [ ] Continuous reconciliation
+### PHASE 2: Asset Discovery ✅
+- [x] Virtual/Container discovery — Docker socket scanner + Libvirt XML-RPC + container stats
+- [x] Attack surface mapper (`internal/discovery/attack_surface/`) — full TCP 0-65535, banner grabbing, IPv6 safe
+- [x] Physical device enumeration (`internal/discovery/physical/`) — sysfs USB + PCI scanning
+- [x] Continuous reconciliation (`internal/discovery/reconciliation/`) — asset drift detection + alerting
 
-### PHASE 3: Browser Integration 🚧
-- [x] Hardened Firefox configuration launcher
-- [ ] WebDriver remote automation
-- [ ] Forensic logging
+### PHASE 3: Browser Integration ✅
+- [x] Hardened Firefox launcher (`internal/browser/firefox/`) — profile isolation, enterprise policy enforcement
+- [x] Browser automation (`internal/browser/automation/`) — CDP client, screenshots, HAR capture, navigation history
 
-### PHASE 4: Modern Frontend 🚀
-- [x] SvelteKit dashboard (Crimson Red / Glassmorphism)
-- [x] Real-time WebSocket pipeline integration
-- [x] D3.js Network Topology Visualization
-- [x] Threat Alert HUD
+### PHASE 4: Modern Frontend ✅
+- [x] SvelteKit dashboard (Crimson Red / Glassmorphism design system)
+- [x] Real-time WebSocket pipeline (gorilla/websocket + Go event bus)
+- [x] D3.js Network Topology Visualization (force-directed graph, live updates)
+- [x] Threat Alert HUD with severity classification
 
-### PHASE 5: Analytics Engine 🚧
-- [x] In-memory Event Pipeline (Pub/Sub)
-- [x] Real-time Correlation rules evaluation
-- [ ] ML-based anomaly detection
+### PHASE 5: Analytics Engine ✅
+- [x] In-memory Event Pipeline — Pub/Sub with sliding window counters (1m/5m/15m)
+- [x] Correlation engine — rule-based threat detection framework
+- [x] ML anomaly detection — Isolation Forest (100 trees) + 7-day behavioral baseline
 
-### PHASE 6: SPECTRE Fleet SDK Integration 🚀
-- [x] Rust Proxy NATS EventBus bridge
-- [x] JWT Authentication & Rate Limiting (Axum)
-- [ ] Distributed OpenTelemetry
+### PHASE 6: SPECTRE Fleet Integration ✅
+- [x] NATS publisher (`internal/events/publisher.go`) — Spectre Event schema
+- [x] Rust Proxy bridge — NATS EventBus via Axum (ADR-0050)
+- [x] JWT Authentication & Rate Limiting
+
+### All 19 Services Wired in `app.go`
+Every module above is initialized, started, and connected to the central event pipeline. The system boots as a unified process.
+
+---
+
+## Production Readiness — Gaps
+
+| Gap | Severity | Detail |
+|---|---|---|
+| Test coverage <5% | **CRITICAL** | 1 test file (vault_test.go), 2 tests. 24 packages untested |
+| 1 hardcoded correlation rule | **CRITICAL** | Only `DNSExfiltrationRule` (checks "evil.com"). No YAML/Sigma rule loading |
+| DNS resolver has no cache | **HIGH** | TODO in code. All queries forwarded upstream without caching |
+| ML model not persisted | **HIGH** | Isolation Forest retrains from zero on every restart |
+| Attack surface scans localhost only | **HIGH** | Hardcoded 127.0.0.1 — should target discovered assets |
+| No CI/CD pipeline | **MEDIUM** | No GitHub Actions workflows |
+| No OpenTelemetry | **LOW** | Spectre integration works via NATS; OTel is a nice-to-have |
+
+---
+
+## Sprint: Production Hardening (deadline: 2026-04-18)
+
+### P1 — Test Coverage (CRITICAL)
+| Task | Package | Validates |
+|---|---|---|
+| Event pipeline unit tests | `internal/events/` | Push/subscribe/broadcast flow |
+| Correlation engine tests | `internal/analytics/correlation/` | Rule matching, false positive rate |
+| Stream processor tests | `internal/analytics/stream/` | Window counters, enrichment |
+| ML anomaly detector tests | `internal/analytics/ml/` | Training, scoring, z-score thresholds |
+| DNS resolver tests | `internal/network/dns/` | Query forwarding, response parsing |
+| Topology builder tests | `internal/network/topology/` | Graph consistency, D3 JSON export |
+| BoltDB repository tests | `internal/storage/db/` | CRUD operations, bucket isolation |
+| Attack surface scanner tests | `internal/discovery/attack_surface/` | Port probe, banner grab |
+| API/WebSocket tests | `internal/api/` | HTTP endpoints, WS upgrade |
+| Integration test: boot → event → persist | `internal/app/` | Full pipeline end-to-end |
+
+### P2 — Threat Detection (CRITICAL)
+| Task | File(s) |
+|---|---|
+| YAML rule loader (read from `configs/rules/`) | `internal/analytics/correlation/` |
+| Port 10+ baseline rules: port scan, brute force, DNS tunnel, C2 beacon, lateral movement | `configs/rules/*.yaml` |
+| Rule hot-reload without restart | `internal/analytics/correlation/` |
+
+### P3 — Operational Correctness (HIGH)
+| Task | File(s) |
+|---|---|
+| DNS response cache with TTL | `internal/network/dns/resolver.go` |
+| ML model serialize/deserialize (gob or protobuf) | `internal/analytics/ml/` |
+| Scanner targets from asset DB instead of localhost | `internal/discovery/attack_surface/service.go` |
+
+### P4 — CI/CD & Release (MEDIUM)
+| Task | File(s) |
+|---|---|
+| GitHub Actions: build + test + lint on PR | `.github/workflows/ci.yml` |
+| `make release` target with version injection | `Makefile` |
 
 ---
 
@@ -336,6 +441,6 @@ Repository: https://github.com/marcosfpina/O.W.A.S.A.K.A
 
 ---
 
-**Status**: 🚀 Voo de Cruzeiro - Modulos Core Integrados
+**Status**: 🚧 Pre-Production — Core modules integrated, wiring sprints in progress
 
-Last Updated: 2026-03-26
+Last Updated: 2026-03-28

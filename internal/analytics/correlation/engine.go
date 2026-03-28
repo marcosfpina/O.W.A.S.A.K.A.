@@ -23,6 +23,18 @@ func NewEngine(cfg *config.CorrelationConfig, logger *logging.Logger) *Engine {
 		logger: logger,
 		rules:  DefaultRules(),
 	}
+
+	// Load custom YAML rules from disk
+	if cfg.CustomRulesEnabled && cfg.RulesDir != "" {
+		yamlRules, err := LoadRulesFromDir(cfg.RulesDir)
+		if err != nil {
+			logger.Errorw("Failed to load YAML correlation rules", "dir", cfg.RulesDir, "error", err)
+		} else if len(yamlRules) > 0 {
+			e.rules = append(e.rules, yamlRules...)
+			logger.Infow("Loaded YAML correlation rules", "count", len(yamlRules), "dir", cfg.RulesDir)
+		}
+	}
+
 	return e
 }
 

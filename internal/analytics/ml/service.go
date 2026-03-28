@@ -2,6 +2,7 @@ package ml
 
 import (
 	"context"
+	"path/filepath"
 	"time"
 
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/events"
@@ -23,11 +24,21 @@ type Service struct {
 
 // NewService creates an ML anomaly detection service.
 func NewService(cfg *config.MLConfig, logger *logging.Logger, pipeline *events.Pipeline) *Service {
+	forest := NewIsolationForest(100, 10, cfg.AnomalyThreshold)
+
+	// Try to load a previously trained model
+	if cfg.ModelDir != "" {
+		modelPath := filepath.Join(cfg.ModelDir, "iforest.gob")
+		if err := forest.Load(modelPath); err == nil {
+			logger.Infow("Loaded pre-trained ML model", "path", modelPath)
+		}
+	}
+
 	return &Service{
 		cfg:      cfg,
 		logger:   logger,
 		pipeline: pipeline,
-		forest:   NewIsolationForest(100, 10, cfg.AnomalyThreshold),
+		forest:   forest,
 		baseline: NewBaseline(cfg.BaselineLearningDays),
 	}
 }
@@ -109,6 +120,14 @@ func (s *Service) train() {
 
 	s.forest.Train(data)
 	s.logger.Infow("ML model retrained", "samples", len(data))
+
+	// Persist trained model to disk
+	if s.cfg.ModelDir != "" {
+		modelPath := filepath.Join(s.cfg.ModelDir, "iforest.gob")
+		if err := s.forest.Save(modelPath); err != nil {
+			s.logger.Errorw("Failed to save ML model", "path", modelPath, "error", err)
+		}
+	}
 }
 
 func (s *Service) emitAlert(e models.NetworkEvent, score float64, features []float64) {

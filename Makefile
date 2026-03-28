@@ -1,7 +1,7 @@
 # O.W.A.S.A.K.A. SIEM - Build Automation
 # Air-gapped SIEM with surgical precision
 
-.PHONY: help build clean test lint deps run dev install docker-down
+.PHONY: help build clean test lint deps run dev install docker-down release
 
 # Variables
 BINARY_NAME=oswaka
@@ -49,13 +49,19 @@ build: deps ## Build the binary
 build-release: deps ## Build optimized release binary
 	@echo "$(CYAN)Building release binary...$(NC)"
 	@mkdir -p bin
-	CGO_ENABLED=0 $(GO) build \
-		-a -installsuffix cgo \
-		$(LDFLAGS) \
-		-ldflags "-X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.buildTime=$(BUILD_TIME)" \
+	CGO_ENABLED=1 $(GO) build \
+		-a \
+		-ldflags "-s -w -X main.version=$(VERSION) -X main.commit=$(GIT_COMMIT) -X main.buildTime=$(BUILD_TIME)" \
 		-o $(BINARY_PATH) \
 		$(CMD_PATH)
 	@echo "$(GREEN)✓ Release build complete$(NC)"
+
+release: check build-release ## Full release: check + optimized build
+	@echo "$(CYAN)Release artifact ready:$(NC)"
+	@ls -lh $(BINARY_PATH)
+	@echo "$(GREEN)  Version: $(VERSION)$(NC)"
+	@echo "$(GREEN)  Commit:  $(GIT_COMMIT)$(NC)"
+	@echo "$(GREEN)  Built:   $(BUILD_TIME)$(NC)"
 
 run: build ## Build and run the application
 	@echo "$(CYAN)Starting O.W.A.S.A.K.A. SIEM...$(NC)"
@@ -187,8 +193,8 @@ info: ## Show project information
 	@echo "  $(YELLOW)Module:$(NC)         github.com/marcosfpina/O.W.A.S.A.K.A"
 	@echo "  $(YELLOW)Binary:$(NC)         $(BINARY_PATH)"
 	@echo ""
-	@echo "  $(YELLOW)Phase:$(NC)          PHASE 0 - Foundation"
-	@echo "  $(YELLOW)Status:$(NC)         $(GREEN)Active Development$(NC)"
+	@echo "  $(YELLOW)Phase:$(NC)          Pre-Production"
+	@echo "  $(YELLOW)Status:$(NC)         $(GREEN)Core Modules Integrated$(NC)"
 	@echo ""
 
 .DEFAULT_GOAL := help
