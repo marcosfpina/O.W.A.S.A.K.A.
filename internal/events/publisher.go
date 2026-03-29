@@ -3,8 +3,11 @@ package events
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nats.go"
 )
 
@@ -16,10 +19,14 @@ type Publisher struct {
 // Connect dials the NATS server at the given URL and returns a Publisher.
 // The connection is configured for infinite reconnect so owasaka survives
 // transient NATS restarts without losing event publishing capability.
+//
+// NKey authentication is used when NATS_NKEY_SEED is set in the environment
+// (the seed string itself, not a file path). Falls back to unauthenticated
+// connection for local dev when the env var is absent.
 func Connect(natsURL string) (*Publisher, error) {
-	nc, err := nats.Connect(natsURL,
+	opts := []nats.Option{
 		nats.MaxReconnects(-1),
-		nats.ReconnectWait(2*time.Second),
+		nats.ReconnectWait(2 * time.Second),
 		nats.DisconnectErrHandler(func(_ *nats.Conn, err error) {
 			fmt.Printf("[owasaka/publisher] NATS disconnected: %v\n", err)
 		}),
@@ -29,7 +36,31 @@ func Connect(natsURL string) (*Publisher, error) {
 		nats.ClosedHandler(func(_ *nats.Conn) {
 			fmt.Println("[owasaka/publisher] NATS connection closed")
 		}),
-	)
+	}
+
+	// NKey authentication: prefer inline seed string (12-factor / SOPS-encrypted .env),
+	// fall back to seed file path (NixOS file-based secrets).
+	if seed := strings.TrimSpace(os.Getenv("NATS_NKEY_SEED")); seed != "" {
+		kp, err := nkeys.FromSeed([]byte(seed))
+		if err != nil {
+			return nil, fmt.Errorf("nats nkey from seed: %w", err)
+		}
+		pub, err := kp.PublicKey()
+		if err != nil {
+			return nil, fmt.Errorf("nats nkey public key: %w", err)
+		}
+		opts = append(opts, nats.Nkey(pub, kp.Sign))
+		fmt.Println("[owasaka/publisher] NATS NKey auth enabled")
+	} else if seedFile := strings.TrimSpace(os.Getenv("NATS_NKEY_SEED_FILE")); seedFile != "" {
+		opt, err := nats.NkeyOptionFromSeed(seedFile)
+		if err != nil {
+			return nil, fmt.Errorf("nats nkey from seed file %s: %w", seedFile, err)
+		}
+		opts = append(opts, opt)
+		fmt.Println("[owasaka/publisher] NATS NKey auth enabled (file)")
+	}
+
+	nc, err := nats.Connect(natsURL, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("nats connect %s: %w", natsURL, err)
 	}

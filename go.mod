@@ -8,6 +8,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/miekg/dns v1.1.72
 	github.com/nats-io/nats.go v1.50.0
+	github.com/nats-io/nkeys v0.4.15
 	go.etcd.io/bbolt v1.4.3
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.49.0
@@ -17,7 +18,6 @@ require (
 
 require (
 	github.com/klauspost/compress v1.18.5 // indirect
-	github.com/nats-io/nkeys v0.4.15 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/mod v0.31.0 // indirect
