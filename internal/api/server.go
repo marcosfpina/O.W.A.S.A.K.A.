@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/metrics"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/config"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/logging"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // Server encapsulates the HTTP and WebSocket API server
@@ -19,6 +22,35 @@ type Server struct {
 	mux        *http.ServeMux
 }
 
+// responseWriter wraps http.ResponseWriter to capture the status code.
+type responseWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+// Instrument wraps a handler with Prometheus request metrics (exported for use in app.go).
+func Instrument(path string, h http.HandlerFunc) http.HandlerFunc {
+	return instrumentedHandler(path, h)
+}
+
+// instrumentedHandler wraps a handler with Prometheus request metrics.
+func instrumentedHandler(path string, h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		start := time.Now()
+		h(rw, r)
+		dur := time.Since(start).Seconds()
+		status := strconv.Itoa(rw.status)
+		metrics.HTTPRequestsTotal.WithLabelValues(r.Method, path, status).Inc()
+		metrics.HTTPRequestDuration.WithLabelValues(r.Method, path).Observe(dur)
+	}
+}
+
 // NewServer builds a new API manager
 func NewServer(cfg *config.ServerConfig, logger *logging.Logger) *Server {
 	s := &Server{
@@ -27,10 +59,11 @@ func NewServer(cfg *config.ServerConfig, logger *logging.Logger) *Server {
 		Hub:    NewWSHub(logger),
 		mux:    http.NewServeMux(),
 	}
-	s.mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	s.mux.HandleFunc("/health", instrumentedHandler("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"online"}`))
-	})
+	}))
+	s.mux.Handle("/metrics", promhttp.Handler())
 	return s
 }
 

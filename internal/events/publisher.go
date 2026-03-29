@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/metrics"
 	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nats.go"
 )
@@ -96,5 +97,9 @@ func (p *Publisher) Publish(subject string, e Event) error {
 	if err != nil {
 		return fmt.Errorf("marshal event: %w", err)
 	}
-	return p.nc.Publish(subject, data)
+	if err := p.nc.Publish(subject, data); err != nil {
+		return err
+	}
+	metrics.EventsPublished.WithLabelValues(subject).Inc()
+	return nil
 }

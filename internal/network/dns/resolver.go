@@ -6,10 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/google/uuid"
+	"github.com/miekg/dns"
 
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/events"
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/metrics"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/models"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/config"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/pkg/logging"
@@ -112,6 +113,14 @@ func (r *Resolver) cacheStore(name string, qtype uint16, msg *dns.Msg) {
 
 // ServeDNS handles incoming DNS requests
 func (r *Resolver) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
+	if len(req.Question) > 0 {
+		qtype := dns.TypeToString[req.Question[0].Qtype]
+		if qtype == "" {
+			qtype = "other"
+		}
+		metrics.DNSQueriesTotal.WithLabelValues(qtype).Inc()
+	}
+
 	msg := new(dns.Msg)
 	msg.SetReply(req)
 	msg.Compress = false

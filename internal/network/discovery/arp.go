@@ -8,6 +8,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/uuid"
 
+	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/metrics"
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/models"
 )
 
@@ -37,6 +38,8 @@ func (s *Scanner) handleARP(arp *layers.ARP) {
 		"mac", srcMAC.String(),
 		"operation", op,
 	)
+
+	metrics.AssetsDiscovered.Inc()
 
 	if s.pipeline != nil {
 		evt := models.NetworkEvent{

@@ -125,23 +125,23 @@ func (a *App) Run() error {
 	pipeline.SetTopologyMapper(topoBuilder)
 
 	// Register REST endpoint for stream processor stats
-	apiServer.RegisterHandler("/api/stats", func(w http.ResponseWriter, r *http.Request) {
+	apiServer.RegisterHandler("/api/stats", api.Instrument("/api/stats", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		if err := json.NewEncoder(w).Encode(streamProc.Stats()); err != nil {
 			a.logger.Errorw("Failed to encode stream stats", "error", err)
 		}
-	})
+	}))
 
 	// Register REST endpoint for full topology snapshot
-	apiServer.RegisterHandler("/api/topology", func(w http.ResponseWriter, r *http.Request) {
+	apiServer.RegisterHandler("/api/topology", api.Instrument("/api/topology", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		snap := topoBuilder.Snapshot()
 		if err := json.NewEncoder(w).Encode(topology.ToD3(snap)); err != nil {
 			a.logger.Errorw("Failed to encode topology", "error", err)
 		}
-	})
+	}))
 
 	if err := apiServer.Start(ctx); err != nil {
 		a.logger.Errorw("Failed to start API Server", "error", err)
