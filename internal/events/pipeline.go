@@ -45,6 +45,21 @@ type Pipeline struct {
 	observer EventObserver
 }
 
+func spectreNetworkSubject(eventType models.EventType) string {
+	switch eventType {
+	case models.EventDNS:
+		return "network.dns.query.v1"
+	case models.EventPortScan, models.EventProxy:
+		return "network.service.detected.v1"
+	case models.EventAlert:
+		return "network.dns.threat.v1"
+	case models.EventARP, models.EventPhysical, models.EventVM:
+		return "network.asset.discovered.v1"
+	default:
+		return "network.asset.discovered.v1"
+	}
+}
+
 // NewPipeline constructs an event dispatcher bridging all output formats
 func NewPipeline(repo *db.Repository, hub *api.WSHub, pub *Publisher, logger *logging.Logger) *Pipeline {
 	return &Pipeline{
@@ -111,15 +126,15 @@ func (p *Pipeline) PushNetworkEvent(e models.NetworkEvent) {
 			SourceService: "SIEM",
 			Payload:       e.Metadata,
 		}
-		
-		// embed intrinsic data 
+
+		// embed intrinsic data
 		if out.Payload == nil {
 			out.Payload = make(map[string]any)
 		}
 		out.Payload["source"] = e.Source
 		out.Payload["destination"] = e.Destination
 
-		p.pub.Publish("events.network."+string(e.Type), out)
+		p.pub.Publish(spectreNetworkSubject(e.Type), out)
 	}
 
 	// 5. Feed topology mapper to track source/destination connections
@@ -143,7 +158,7 @@ func (p *Pipeline) PushAsset(a models.Asset) {
 	if a.ID == "" {
 		a.ID = uuid.NewString()
 	}
-	
+
 	if a.FirstSeen.IsZero() {
 		a.FirstSeen = time.Now()
 	}
@@ -160,11 +175,11 @@ func (p *Pipeline) PushAsset(a models.Asset) {
 	if p.hub != nil {
 		// Wrap as an 'asset' discovery envelope so Svelte knows what it is
 		envelope := map[string]any{
-			"type": "ASSET_DISCOVERY",
-			"data": a,
+			"type":      "ASSET_DISCOVERY",
+			"data":      a,
 			"timestamp": time.Now(),
 		}
-		
+
 		p.hub.Broadcast(envelope)
 	}
 
@@ -177,11 +192,11 @@ func (p *Pipeline) PushAsset(a models.Asset) {
 	if p.pub != nil {
 		data, _ := json.Marshal(a)
 		payload := map[string]any{"asset": string(data)}
-		p.pub.Publish("events.topology.asset", Event{
-			EventID:       a.ID,
-			EventType:     "ASSET",
-			Timestamp:     time.Now(),
-			Payload:       payload,
+		p.pub.Publish("network.topology.updated.v1", Event{
+			EventID:   a.ID,
+			EventType: "TOPOLOGY_UPDATE",
+			Timestamp: time.Now(),
+			Payload:   payload,
 		})
 	}
 }

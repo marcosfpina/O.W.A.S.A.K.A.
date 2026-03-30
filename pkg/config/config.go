@@ -46,34 +46,34 @@ type TLSConfig struct {
 
 // LoggingConfig holds logging configuration
 type LoggingConfig struct {
-	Level       string `yaml:"level"`
-	Format      string `yaml:"format"`
-	Output      string `yaml:"output"`
-	FilePath    string `yaml:"file_path"`
-	MaxSizeMB   int    `yaml:"max_size_mb"`
-	MaxBackups  int    `yaml:"max_backups"`
-	MaxAgeDays  int    `yaml:"max_age_days"`
-	Compress    bool   `yaml:"compress"`
+	Level      string `yaml:"level"`
+	Format     string `yaml:"format"`
+	Output     string `yaml:"output"`
+	FilePath   string `yaml:"file_path"`
+	MaxSizeMB  int    `yaml:"max_size_mb"`
+	MaxBackups int    `yaml:"max_backups"`
+	MaxAgeDays int    `yaml:"max_age_days"`
+	Compress   bool   `yaml:"compress"`
 }
 
 // NetworkConfig holds network intelligence configuration
 type NetworkConfig struct {
-	DNS       DNSConfig       `yaml:"dns"`
-	Proxy     ProxyConfig     `yaml:"proxy"`
-	Discovery ScanConfig      `yaml:"discovery"`
-	Topology  TopologyConfig  `yaml:"topology"`
+	DNS       DNSConfig      `yaml:"dns"`
+	Proxy     ProxyConfig    `yaml:"proxy"`
+	Discovery ScanConfig     `yaml:"discovery"`
+	Topology  TopologyConfig `yaml:"topology"`
 }
 
 type DNSConfig struct {
-	Enabled          bool     `yaml:"enabled"`
-	ListenAddress    string   `yaml:"listen_address"`
-	UpstreamServers  []string `yaml:"upstream_servers"`
-	DoHEnabled       bool     `yaml:"doh_enabled"`
-	DoHURL           string   `yaml:"doh_url"`
-	CacheSize        int      `yaml:"cache_size"`
-	CacheTTLSeconds  int      `yaml:"cache_ttl_seconds"`
-	LogQueries       bool     `yaml:"log_queries"`
-	ThreatDetection  bool     `yaml:"threat_detection"`
+	Enabled         bool     `yaml:"enabled"`
+	ListenAddress   string   `yaml:"listen_address"`
+	UpstreamServers []string `yaml:"upstream_servers"`
+	DoHEnabled      bool     `yaml:"doh_enabled"`
+	DoHURL          string   `yaml:"doh_url"`
+	CacheSize       int      `yaml:"cache_size"`
+	CacheTTLSeconds int      `yaml:"cache_ttl_seconds"`
+	LogQueries      bool     `yaml:"log_queries"`
+	ThreatDetection bool     `yaml:"threat_detection"`
 }
 
 type ProxyConfig struct {
@@ -86,12 +86,12 @@ type ProxyConfig struct {
 }
 
 type ScanConfig struct {
-	Enabled              bool     `yaml:"enabled"`
-	ScanIntervalMinutes  int      `yaml:"scan_interval_minutes"`
-	Methods              []string `yaml:"methods"`
-	PassiveMonitoring    bool     `yaml:"passive_monitoring"`
-	ConcurrentScans      int      `yaml:"concurrent_scans"`
-	RateLimitPerSecond   int      `yaml:"rate_limit_per_second"`
+	Enabled             bool     `yaml:"enabled"`
+	ScanIntervalMinutes int      `yaml:"scan_interval_minutes"`
+	Methods             []string `yaml:"methods"`
+	PassiveMonitoring   bool     `yaml:"passive_monitoring"`
+	ConcurrentScans     int      `yaml:"concurrent_scans"`
+	RateLimitPerSecond  int      `yaml:"rate_limit_per_second"`
 }
 
 type TopologyConfig struct {
@@ -103,11 +103,11 @@ type TopologyConfig struct {
 
 // DiscoveryConfig holds asset discovery configuration
 type DiscoveryConfig struct {
-	Physical        PhysicalConfig        `yaml:"physical"`
-	Virtual         VirtualConfig         `yaml:"virtual"`
-	Containers      ContainerConfig       `yaml:"containers"`
-	AttackSurface   AttackSurfaceConfig   `yaml:"attack_surface"`
-	Reconciliation  ReconciliationConfig  `yaml:"reconciliation"`
+	Physical       PhysicalConfig       `yaml:"physical"`
+	Virtual        VirtualConfig        `yaml:"virtual"`
+	Containers     ContainerConfig      `yaml:"containers"`
+	AttackSurface  AttackSurfaceConfig  `yaml:"attack_surface"`
+	Reconciliation ReconciliationConfig `yaml:"reconciliation"`
 }
 
 type PhysicalConfig struct {
@@ -130,16 +130,16 @@ type ContainerConfig struct {
 }
 
 type AttackSurfaceConfig struct {
-	Enabled               bool     `yaml:"enabled"`
-	ScanIntervalMinutes   int      `yaml:"scan_interval_minutes"`
-	ConcurrentScans       int      `yaml:"concurrent_scans"`
+	Enabled               bool      `yaml:"enabled"`
+	ScanIntervalMinutes   int       `yaml:"scan_interval_minutes"`
+	ConcurrentScans       int       `yaml:"concurrent_scans"`
 	PortRange             PortRange `yaml:"port_range"`
-	Protocols             []string `yaml:"protocols"`
-	DetectDormant         bool     `yaml:"detect_dormant"`
-	DetectGhost           bool     `yaml:"detect_ghost"`
-	ServiceFingerprinting bool     `yaml:"service_fingerprinting"`
-	BannerGrabbing        bool     `yaml:"banner_grabbing"`
-	TLSAnalysis           bool     `yaml:"tls_analysis"`
+	Protocols             []string  `yaml:"protocols"`
+	DetectDormant         bool      `yaml:"detect_dormant"`
+	DetectGhost           bool      `yaml:"detect_ghost"`
+	ServiceFingerprinting bool      `yaml:"service_fingerprinting"`
+	BannerGrabbing        bool      `yaml:"banner_grabbing"`
+	TLSAnalysis           bool      `yaml:"tls_analysis"`
 }
 
 type PortRange struct {
@@ -148,17 +148,17 @@ type PortRange struct {
 }
 
 type ReconciliationConfig struct {
-	Enabled                 bool `yaml:"enabled"`
-	CheckIntervalMinutes    int  `yaml:"check_interval_minutes"`
-	AlertOnChange           bool `yaml:"alert_on_change"`
-	TrackHistory            bool `yaml:"track_history"`
-	HistoryRetentionDays    int  `yaml:"history_retention_days"`
+	Enabled              bool `yaml:"enabled"`
+	CheckIntervalMinutes int  `yaml:"check_interval_minutes"`
+	AlertOnChange        bool `yaml:"alert_on_change"`
+	TrackHistory         bool `yaml:"track_history"`
+	HistoryRetentionDays int  `yaml:"history_retention_days"`
 }
 
 // BrowserConfig holds browser integration configuration
 type BrowserConfig struct {
-	Enabled    bool           `yaml:"enabled"`
-	Firefox    FirefoxConfig  `yaml:"firefox"`
+	Enabled    bool             `yaml:"enabled"`
+	Firefox    FirefoxConfig    `yaml:"firefox"`
 	Automation AutomationConfig `yaml:"automation"`
 }
 
@@ -179,23 +179,23 @@ type AutomationConfig struct {
 
 // StorageConfig holds storage configuration
 type StorageConfig struct {
-	NAS        NASConfig        `yaml:"nas"`
-	Encryption EncryptionConfig `yaml:"encryption"`
-	Integrity  IntegrityConfig  `yaml:"integrity"`
+	NAS        NASConfig          `yaml:"nas"`
+	Encryption EncryptionConfig   `yaml:"encryption"`
+	Integrity  IntegrityConfig    `yaml:"integrity"`
 	Local      LocalStorageConfig `yaml:"local"`
 }
 
 type NASConfig struct {
-	Enabled                     bool   `yaml:"enabled"`
-	Type                        string `yaml:"type"`
-	Host                        string `yaml:"host"`
-	Share                       string `yaml:"share"`
-	MountPoint                  string `yaml:"mount_point"`
-	Username                    string `yaml:"username"`
-	Password                    string `yaml:"password"`
-	TimeoutSeconds              int    `yaml:"timeout_seconds"`
-	RetryAttempts               int    `yaml:"retry_attempts"`
-	HealthCheckIntervalSeconds  int    `yaml:"health_check_interval_seconds"`
+	Enabled                    bool   `yaml:"enabled"`
+	Type                       string `yaml:"type"`
+	Host                       string `yaml:"host"`
+	Share                      string `yaml:"share"`
+	MountPoint                 string `yaml:"mount_point"`
+	Username                   string `yaml:"username"`
+	Password                   string `yaml:"password"`
+	TimeoutSeconds             int    `yaml:"timeout_seconds"`
+	RetryAttempts              int    `yaml:"retry_attempts"`
+	HealthCheckIntervalSeconds int    `yaml:"health_check_interval_seconds"`
 }
 
 type EncryptionConfig struct {
@@ -207,11 +207,11 @@ type EncryptionConfig struct {
 }
 
 type IntegrityConfig struct {
-	Enabled                 bool   `yaml:"enabled"`
-	MerkleTree              bool   `yaml:"merkle_tree"`
-	AuditLog                string `yaml:"audit_log"`
-	SnapshotIntervalHours   int    `yaml:"snapshot_interval_hours"`
-	SnapshotRetentionDays   int    `yaml:"snapshot_retention_days"`
+	Enabled               bool   `yaml:"enabled"`
+	MerkleTree            bool   `yaml:"merkle_tree"`
+	AuditLog              string `yaml:"audit_log"`
+	SnapshotIntervalHours int    `yaml:"snapshot_interval_hours"`
+	SnapshotRetentionDays int    `yaml:"snapshot_retention_days"`
 }
 
 type LocalStorageConfig struct {
@@ -235,28 +235,28 @@ type StreamConfig struct {
 }
 
 type CorrelationConfig struct {
-	Enabled                    bool   `yaml:"enabled"`
-	RulesDir                   string `yaml:"rules_dir"`
-	SigmaRulesEnabled          bool   `yaml:"sigma_rules_enabled"`
-	CustomRulesEnabled         bool   `yaml:"custom_rules_enabled"`
+	Enabled                     bool   `yaml:"enabled"`
+	RulesDir                    string `yaml:"rules_dir"`
+	SigmaRulesEnabled           bool   `yaml:"sigma_rules_enabled"`
+	CustomRulesEnabled          bool   `yaml:"custom_rules_enabled"`
 	MaxCorrelationWindowMinutes int    `yaml:"max_correlation_window_minutes"`
 }
 
 type MLConfig struct {
-	Enabled                bool     `yaml:"enabled"`
-	ModelDir               string   `yaml:"model_dir"`
-	TrainingIntervalHours  int      `yaml:"training_interval_hours"`
-	AnomalyThreshold       float64  `yaml:"anomaly_threshold"`
-	Methods                []string `yaml:"methods"`
-	BaselineLearningDays   int      `yaml:"baseline_learning_days"`
+	Enabled               bool     `yaml:"enabled"`
+	ModelDir              string   `yaml:"model_dir"`
+	TrainingIntervalHours int      `yaml:"training_interval_hours"`
+	AnomalyThreshold      float64  `yaml:"anomaly_threshold"`
+	Methods               []string `yaml:"methods"`
+	BaselineLearningDays  int      `yaml:"baseline_learning_days"`
 }
 
 // AlertsConfig holds alerting configuration
 type AlertsConfig struct {
-	Enabled        bool                   `yaml:"enabled"`
-	Thresholds     map[string]float64     `yaml:"thresholds"`
-	Destinations   map[string]interface{} `yaml:"destinations"`
-	Deduplication  DeduplicationConfig    `yaml:"deduplication"`
+	Enabled       bool                   `yaml:"enabled"`
+	Thresholds    map[string]float64     `yaml:"thresholds"`
+	Destinations  map[string]interface{} `yaml:"destinations"`
+	Deduplication DeduplicationConfig    `yaml:"deduplication"`
 }
 
 type DeduplicationConfig struct {
@@ -311,9 +311,9 @@ type APIAuthConfig struct {
 }
 
 type RateLimitingConfig struct {
-	Enabled            bool `yaml:"enabled"`
-	RequestsPerSecond  int  `yaml:"requests_per_second"`
-	Burst              int  `yaml:"burst"`
+	Enabled           bool `yaml:"enabled"`
+	RequestsPerSecond int  `yaml:"requests_per_second"`
+	Burst             int  `yaml:"burst"`
 }
 
 type RBACConfig struct {
@@ -331,6 +331,10 @@ func Load(filename string) (*Config, error) {
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
+	}
+
+	if natsURL := os.Getenv("NATS_URL"); natsURL != "" {
+		cfg.NatsURL = natsURL
 	}
 
 	// TODO: Validate configuration

@@ -1,6 +1,7 @@
 package events
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,8 +9,8 @@ import (
 	"time"
 
 	"github.com/marcosfpina/O.W.A.S.A.K.A/internal/metrics"
-	"github.com/nats-io/nkeys"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nkeys"
 )
 
 // Publisher wraps a NATS connection for publishing Spectre-schema events.
@@ -59,6 +60,19 @@ func Connect(natsURL string) (*Publisher, error) {
 		}
 		opts = append(opts, opt)
 		fmt.Println("[owasaka/publisher] NATS NKey auth enabled (file)")
+	}
+	if caFile := strings.TrimSpace(os.Getenv("NATS_CA_FILE")); caFile != "" {
+		opts = append(opts, nats.RootCAs(caFile))
+	}
+	if certFile := strings.TrimSpace(os.Getenv("NATS_CLIENT_CERT_FILE")); certFile != "" {
+		keyFile := strings.TrimSpace(os.Getenv("NATS_CLIENT_KEY_FILE"))
+		if keyFile == "" {
+			return nil, fmt.Errorf("nats client key file required when NATS_CLIENT_CERT_FILE is set")
+		}
+		opts = append(opts, nats.ClientCert(certFile, keyFile))
+	}
+	if strings.HasPrefix(natsURL, "tls://") {
+		opts = append(opts, nats.Secure(&tls.Config{MinVersion: tls.VersionTLS12}))
 	}
 
 	nc, err := nats.Connect(natsURL, opts...)
